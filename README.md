@@ -1,129 +1,128 @@
-# 🎙️ AI Call Analytics — Enterprise Intelligence & Conversation Platform
+# AI Call Analytics — Full-Stack Enterprise Intelligence Platform
 
-<p align="center">
-  <img src="frontend/src/assets/hero.png" alt="AI Call Analytics Banner" width="100%" style="max-height: 400px; object-fit: cover; border-radius: 12px;" />
-</p>
+[![React](https://img.shields.io/badge/Frontend-React_19_%7C_TypeScript-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind_CSS_v4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI_%7C_Python_3.11-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL_16_%2B_pgvector-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
+[![Redis](https://img.shields.io/badge/Cache%2FQueue-Redis_7-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
+[![Celery](https://img.shields.io/badge/Workers-Celery_5.4-37814A?style=flat-square&logo=celery&logoColor=white)](https://docs.celeryq.dev/)
+[![Docker](https://img.shields.io/badge/DevOps-Docker_Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
 
-<p align="center">
-  <strong>End-to-End Full-Stack Platform for Voice Ingestion, Speech-to-Text, Speaker Diarization, Sentiment Telemetry, and Semantic Search.</strong>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/React-19.2-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" />
-  <img src="https://img.shields.io/badge/TypeScript-6.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS v4" />
-  <img src="https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
-  <img src="https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.11" />
-  <img src="https://img.shields.io/badge/PostgreSQL_16-pgvector-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL pgvector" />
-  <img src="https://img.shields.io/badge/Redis-7.0-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis" />
-  <img src="https://img.shields.io/badge/Celery-5.4-37814A?style=for-the-badge&logo=celery&logoColor=white" alt="Celery" />
-  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Compose" />
-</p>
+An end-to-end, production-grade **Full-Stack Speech Intelligence Platform** designed to ingest, process, and analyze enterprise customer support calls. The platform integrates a modern **React 19 + TypeScript SPA**, an **asynchronous FastAPI backend**, a **distributed Celery task queue**, and **PostgreSQL with pgvector** for semantic vector search and real-time conversation telemetry.
 
 ---
 
-## 📌 Executive Summary
+## 💼 Full-Stack Engineering Competencies Demonstrated
 
-**AI Call Analytics** is a production-oriented, full-stack intelligence platform engineered to turn raw call recordings into actionable operational insights. By combining a **reactive, high-performance TypeScript frontend**, an **asynchronous FastAPI backend**, a **distributed Celery task queue**, and state-of-the-art **Audio AI & NLP pipelines**, this system extracts rich conversational metrics in near real-time.
-
-Key capabilities include:
-- **Whisper ASR & PyAnnote Diarization**: Multi-speaker transcription segmented by speaker turn.
-- **Sentiment & Risk Telemetry**: Granular sentence-level emotion scoring and churn/escalation risk flagging.
-- **Vector Semantic Search**: High-dimensional embeddings stored in **PostgreSQL + pgvector** using HNSW indexing for rapid semantic querying.
-- **Dynamic Topic Clustering**: Automatic discovery of emerging customer complaints using UMAP dimensionality reduction and HDBSCAN clustering.
-- **Responsive Analytics Dashboard**: Built with React 19, Tailwind CSS v4, Zustand, TanStack Query, and interactive Recharts data visualizations.
+| Layer | Core Skills & Methodologies | Technologies |
+|---|---|---|
+| **Frontend Engineering** | Reactive Component Architecture, Server-State Synchronization, Optimistic UI Updates, Type Safety, Dynamic Telemetry Charts | React 19, TypeScript, Tailwind CSS v4, TanStack Query v5, Zustand v5, Recharts, Vite |
+| **Backend & API Design** | Asynchronous Non-Blocking I/O, Layered Clean Architecture, RESTful API Standards, Structured JSON Logging, Authentication & RBAC | Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2.0 (asyncio), structlog, JWT (python-jose) |
+| **Data & Vector Storage** | Relational Modeling, High-Dimensional Vector Embeddings, HNSW Vector Indexing, Migrations, Connection Pooling | PostgreSQL 16, pgvector, Alembic, asyncpg |
+| **Distributed Systems** | Asynchronous Task Queuing, Heavy Computation Decoupling, Worker Concurrency, Cache Management | Redis 7, Celery 5.4 |
+| **AI/ML Systems Integration** | Speech-to-Text Pipeline, Multi-Speaker Diarization, Sentiment Trajectory Modeling, Unsupervised Clustering, Risk Inference | faster-whisper, pyannote.audio, Sentence-Transformers, UMAP, HDBSCAN, XGBoost, spaCy |
+| **DevOps & Architecture** | Multi-Stage Containerization, Service Orchestration, Automated Healthchecks, Environment Isolation | Docker, Docker Compose, Linux Alpine containers |
 
 ---
 
-## 🏗️ System Architecture & Data Flow
+## 🏛️ System Architecture & Data Pipeline
 
 ```mermaid
 flowchart TD
-    subgraph Client ["Client Layer (React 19 + TypeScript)"]
+    subgraph Client ["Frontend Architecture (React 19 + TypeScript)"]
         UI["Modern SPA (Vite + Tailwind CSS v4)"]
-        State["Zustand Store & TanStack Query"]
-        Charts["Recharts Visualizations & Waveforms"]
+        State["Zustand Client Store & TanStack Query v5"]
+        Charts["Recharts Visualizations & Waveform Telemetry"]
     end
 
-    subgraph API_Gateway ["Backend Application Layer (FastAPI)"]
-        Auth["JWT Auth & Security"]
-        Router["Async REST Controllers"]
-        Pydantic["Pydantic v2 Data Validation"]
-        ServiceLayer["Service & Business Logic"]
+    subgraph Backend ["Backend & API Services (FastAPI + Asyncio)"]
+        Auth["JWT Authentication & RBAC Middleware"]
+        Router["Asynchronous REST Endpoints"]
+        Validation["Pydantic v2 Schema Validation"]
+        ServiceLayer["Domain Services & Business Logic"]
     end
 
-    subgraph Task_Queue ["Distributed Processing Layer"]
+    subgraph Queue ["Distributed Async Task Processing"]
         Redis["Redis 7 (Message Broker & Result Cache)"]
-        Celery["Celery Task Workers (Async Audio Ingestion)"]
+        Celery["Celery Distributed Workers"]
     end
 
-    subgraph AI_Engine ["AI / ML Pipeline Microservices"]
-        FFmpeg["Audio Normalization & Chunking"]
-        ASR["faster-whisper (Speech-to-Text)"]
-        Diar["pyannote.audio (Speaker Diarization)"]
-        NLP["spaCy (NER) & Sentence-Transformers"]
-        ML["XGBoost Risk Classifier & UMAP/HDBSCAN"]
+    subgraph AI_Engine ["AI & Speech Processing Microservices"]
+        FFmpeg["FFmpeg Audio Normalization & Resampling"]
+        ASR["faster-whisper (Speech-to-Text ASR)"]
+        Diarization["pyannote.audio (Speaker Diarization)"]
+        NLP["spaCy NER & Sentence-Transformers"]
+        MLModels["XGBoost Risk Scorer & UMAP + HDBSCAN"]
     end
 
-    subgraph Data_Layer ["Persistence & Storage Layer"]
-        PG["PostgreSQL 16 (Relational DB)"]
-        PGV["pgvector (HNSW Vector Indexing)"]
-        Storage["Audio Artifacts Store (S3-Compatible)"]
+    subgraph Storage ["Persistence & Vector Search Layer"]
+        Postgres["PostgreSQL 16 (Relational Metadata)"]
+        PgVector["pgvector Extension (HNSW Indexing)"]
+        AudioStore["Object Storage (Audio Recordings)"]
     end
 
-    UI <--> |HTTPS / REST API| Router
-    Router --> ServiceLayer
-    ServiceLayer --> |Enqueue Task| Redis
+    UI --> Router
+    Router --> Validation
+    Validation --> ServiceLayer
+    ServiceLayer --> Redis
     Redis --> Celery
     Celery --> AI_Engine
-    AI_Engine --> |Relational Metadata| PG
-    AI_Engine --> |Dense Embeddings (768d)| PGV
-    AI_Engine --> |Processed Audio| Storage
-    ServiceLayer <--> |Async SQLAlchemy 2.0| PG
-    ServiceLayer <--> |Vector Similarity Search| PGV
+    AI_Engine --> Postgres
+    AI_Engine --> PgVector
+    AI_Engine --> AudioStore
+    ServiceLayer --> Postgres
+    ServiceLayer --> PgVector
 ```
 
 ---
 
-## 🚀 Key Engineering & Full-Stack Highlights
+## 🔍 Technical Deep-Dive
 
-### 💻 Frontend Architecture
-- **React 19 + TypeScript**: Statically typed component ecosystem with strict linting (`oxlint`) and zero runtime type regressions.
-- **Tailwind CSS v4 & Glassmorphism Design System**: Tailored dark-mode UI with sleek glass surfaces, vibrant micro-interactions, and accessible typography.
-- **TanStack Query v5**: Server-state synchronization, optimistic updates, intelligent caching, and network resilience.
-- **Zustand State Management**: Lightweight, boilerplate-free client state for audio playback, active filter criteria, and active transcript markers.
-- **Recharts Analytics**: Real-time rendering of call sentiment timelines, speaker talk-time ratios, customer intent distributions, and agent performance matrices.
+### 1. Frontend Architecture (React 19 + TypeScript)
+- **Component-Driven Design**: Built with Vite and React 19, adopting modular layouts (`layouts/`), reusable components (`components/`), and page views (`pages/`).
+- **Server-State Management with TanStack Query v5**: Decouples API fetching from component lifecycle, offering automatic cache invalidation, background refetching, and query deduplication.
+- **Client State via Zustand v5**: Minimal-overhead atomic store managing global audio playback position, active call filters, and transcript auto-scroll states without unnecessary re-renders.
+- **Data Visualization with Recharts**: Custom interactive charts rendering sentiment progression timelines, speaker talk-time ratios, customer intent distributions, and agent quality scores.
+- **Modern Styling System**: Styled using Tailwind CSS v4 for a responsive, dark-mode first, glassmorphic enterprise dashboard.
 
-### ⚙️ Backend & API Engineering
-- **Asynchronous FastAPI Engine**: Non-blocking I/O with Python 3.11 `asyncio` and `uvicorn`, maximizing throughput for file uploads and analytical queries.
-- **Clean Layered Architecture**: Strict separation of concerns across Routes (`api/`), Domain Services (`services/`), ORM Models (`models/`), and Schemas (`schemas/`).
-- **SQLAlchemy 2.0 (Async) + Alembic**: Declarative async ORM mappings with full migration history and connection pooling via `asyncpg`.
-- **Stateless Authentication**: High-security JWT (JSON Web Tokens) with Argon2/Bcrypt password hashing and role-based access control (RBAC).
-- **Structured Logging**: Production JSON telemetry using `structlog` for correlation tracing across distributed worker tasks.
+### 2. Backend & System Design (FastAPI + Asyncio)
+- **High-Concurrency Async Core**: Non-blocking request handlers powered by Python 3.11 `asyncio` and `uvicorn`, maximizing I/O performance for high-throughput concurrent workloads.
+- **Clean Layered Architecture**:
+  - `api/`: REST route controllers and HTTP request/response serialization.
+  - `services/`: Encapsulated domain business logic.
+  - `models/`: SQLAlchemy 2.0 Declarative ORM models.
+  - `schemas/`: Pydantic v2 data transfer objects guaranteeing strict runtime validation.
+- **Database Connection Pooling**: Async PostgreSQL driver (`asyncpg`) integrated with SQLAlchemy 2.0 connection pooling to eliminate connection bottlenecks.
+- **Enterprise Security**: Stateless JSON Web Token (JWT) authentication with password hashing (Bcrypt/Argon2) and route-level authorization dependencies.
+- **Production Observability**: Structured JSON logging powered by `structlog` for correlation IDs and distributed request tracking.
 
-### 🧠 Distributed Systems & Vector Search
-- **Decoupled Heavy Computation**: Audio transcription and ML inference are offloaded to **Celery** workers backed by **Redis**, ensuring API responsiveness under high ingest loads.
-- **PostgreSQL 16 + pgvector**: Hybrid storage enabling relational joins between call metadata and 768-dimensional dense semantic vectors. Accelerated via HNSW (Hierarchical Navigable Small World) indices.
-- **Dual Pipeline Execution**: Optimized for both batch historical ingestion and near-real-time streaming analytics.
+### 3. Distributed Task Queue & Microservices (Celery + Redis)
+- **Decoupled Heavy Audio Compute**: Long-running audio decoding, speaker diarization, and LLM inference tasks are dispatched as asynchronous Celery tasks to avoid blocking web workers.
+- **Message Broker & In-Memory Caching**: Redis 7 acts as a fast message broker for Celery queues while caching frequently accessed dashboard aggregate statistics.
+
+### 4. Database & Vector Search Engine (PostgreSQL 16 + pgvector)
+- **Hybrid Relational & Vector Storage**: Stores traditional structured data (users, organizations, call metadata, transcripts) alongside 768-dimensional dense vector embeddings in a single unified database.
+- **HNSW Approximate Nearest Neighbor Search**: Employs `pgvector` with Hierarchical Navigable Small World (HNSW) indexing to achieve millisecond-level semantic similarity queries across millions of call utterances.
+- **Zero-Downtime Database Migrations**: Automated schema evolution managed through Alembic migration scripts.
 
 ---
 
-## 🛠️ Technology Stack Breakdown
+## 🛠️ Technology Stack
 
 | Domain | Technology | Purpose |
 |---|---|---|
-| **Frontend** | React 19, TypeScript, Vite | Core SPA foundation & build pipeline |
-| **Styling & UI** | Tailwind CSS v4, Lucide React | Responsive UI, modern aesthetic tokens, iconography |
-| **State & Cache** | TanStack Query v5, Zustand v5 | Server state caching & client UI state |
-| **Visualization** | Recharts 3.x | Visual metrics (sentiment over time, talk ratios) |
-| **Backend API** | FastAPI, Pydantic v2, Uvicorn | High-performance asynchronous REST API |
+| **Frontend Framework** | React 19, TypeScript, Vite | Single-page application core & type safety |
+| **Frontend State & Cache** | TanStack Query v5, Zustand v5 | Server state caching & client UI state |
+| **Data Visualization** | Recharts 3.x, Lucide React | Visual metric dashboards & iconography |
+| **Styling** | Tailwind CSS v4 | Responsive utility-first design system |
+| **Backend Framework** | FastAPI, Pydantic v2, Uvicorn | Asynchronous RESTful API engine |
 | **Database & ORM** | PostgreSQL 16, SQLAlchemy 2.0 (async), Alembic | Relational data persistence & migrations |
-| **Vector Engine** | pgvector extension (pg16) | High-dimensional embedding storage & HNSW similarity search |
-| **Queue & Cache** | Redis 7, Celery 5.4 | Task queue for async background processing |
-| **Audio Processing** | FFmpeg, librosa, soundfile | Audio format normalization, resampling (16kHz), VAD |
-| **Speech & NLP AI** | faster-whisper, pyannote.audio, spaCy | Automatic Speech Recognition, Diarization, NER |
-| **Machine Learning** | Sentence-Transformers, UMAP, HDBSCAN, XGBoost | Intent classification, clustering, escalation risk scoring |
-| **DevOps & Infra** | Docker, Docker Compose, Multi-stage builds | Containerized local & production orchestration |
+| **Vector Search** | pgvector (HNSW Indexing) | Semantic embeddings and similarity queries |
+| **Task Queue & Cache** | Redis 7, Celery 5.4 | Distributed background task execution |
+| **Audio Processing** | FFmpeg, librosa, soundfile | Format conversion, 16kHz resampling, VAD |
+| **Speech & NLP AI** | faster-whisper, pyannote.audio, spaCy | ASR transcription, diarization, entity recognition |
+| **Machine Learning** | Sentence-Transformers, UMAP, HDBSCAN, XGBoost | Intent classification, clustering, risk scoring |
+| **Containerization** | Docker, Docker Compose | Multi-container reproducible environments |
 
 ---
 
@@ -131,7 +130,7 @@ flowchart TD
 
 ```text
 AI-Call-Analytics/
-├── frontend/                     # Modern React 19 + TypeScript SPA
+├── frontend/                     # React 19 + TypeScript SPA
 │   ├── src/
 │   │   ├── charts/               # Recharts visualization modules
 │   │   ├── components/           # Reusable UI components & design system
@@ -142,7 +141,7 @@ AI-Call-Analytics/
 │   │   ├── store/                # Zustand client stores
 │   │   ├── types/                # TypeScript interface contracts
 │   │   └── utils/                # Formatting, calculations & helpers
-│   ├── package.json              # Frontend manifest
+│   ├── package.json              # Frontend manifest & scripts
 │   └── vite.config.ts            # Vite bundler configuration
 │
 ├── backend/                      # Scalable FastAPI Microservice
@@ -175,9 +174,9 @@ AI-Call-Analytics/
 │   ├── frontend.Dockerfile       # Node build & static serve container
 │   └── init-pgvector.sql         # DB bootstrap script with vector extension
 │
-├── data/                         # Local storage for audio tiers & datasets
-├── docs/                         # Comprehensive engineering documentation
-├── docker-compose.yml            # Complete multi-service orchestration
+├── data/                         # Audio tiers & training datasets
+├── docs/                         # Architecture & API documentation
+├── docker-compose.yml            # Multi-service orchestration
 └── .env.example                  # Environment configuration template
 ```
 
@@ -186,15 +185,15 @@ AI-Call-Analytics/
 ## ⚡ Quick Start & Development Setup
 
 ### Prerequisites
-- **Docker & Docker Compose** (Recommended for easiest setup)
+- **Docker & Docker Compose** (Recommended)
 - **Node.js 20+** & **Python 3.11+** (For native development)
 - **FFmpeg** (For local audio processing)
 
 ---
 
-### Option A: Complete Docker Compose Setup (Recommended)
+### Option 1: Docker Compose (All Services)
 
-Run the entire platform (Frontend, Backend, PostgreSQL with `pgvector`, and Redis) with a single command:
+Launch the full stack (Frontend, Backend, PostgreSQL with `pgvector`, and Redis) with one command:
 
 ```bash
 # 1. Clone repository
@@ -208,21 +207,21 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-#### Access Points:
-- 🌐 **Web Application Dashboard**: [http://localhost:5173](http://localhost:5173)
-- 🔌 **FastAPI Interactive Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- 🩺 **Backend Health Endpoint**: [http://localhost:8000/health](http://localhost:8000/health)
+#### Service Endpoints:
+- **Web Application Dashboard**: [http://localhost:5173](http://localhost:5173)
+- **FastAPI Interactive Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Backend Health Check**: [http://localhost:8000/health](http://localhost:8000/health)
 
 ---
 
-### Option B: Local Native Development Setup
+### Option 2: Local Native Development
 
-#### 1. Start Infrastructure (Postgres + Redis)
+#### 1. Start Infrastructure (PostgreSQL + Redis)
 ```bash
 docker compose up -d postgres redis
 ```
 
-Verify `pgvector` extension:
+Verify the `pgvector` extension:
 ```bash
 docker compose exec postgres psql -U postgres -d ai_call_analytics -c "\dx"
 ```
@@ -231,9 +230,11 @@ docker compose exec postgres psql -U postgres -d ai_call_analytics -c "\dx"
 ```bash
 cd backend
 
-# Setup virtual environment
+# Create virtual environment
 python -m venv venv
-# Windows:
+
+# Activate virtual environment
+# Windows PowerShell:
 .\venv\Scripts\Activate.ps1
 # macOS/Linux:
 # source venv/bin/activate
@@ -265,39 +266,18 @@ npm run dev
 cd backend
 pytest -v
 
-# Run frontend linting
+# Run frontend static analysis
 cd frontend
 npm run lint
 
-# Build production bundle
+# Build frontend production bundle
 npm run build
 ```
 
 ---
 
-## 🗺️ Project Milestones & Roadmap
+## 📄 License
 
-- [x] **Phase 0 — System Architecture & Foundations**
-  - [x] Dockerized environment with PostgreSQL 16 + pgvector & Redis 7.
-  - [x] Clean architecture skeleton for FastAPI backend and React 19 client.
-  - [x] Strict typing setup with TypeScript 6 and Pydantic v2.
-- [ ] **Phase 1 — Ingestion & Speech Intelligence**
-  - [ ] Multi-format audio upload API with S3 artifact persistence.
-  - [ ] Asynchronous Celery audio pipeline with `faster-whisper` and `pyannote.audio`.
-  - [ ] Turn-level speaker transcription storage.
-- [ ] **Phase 2 — NLP & Semantic Vector Search**
-  - [ ] Sentiment trajectory analysis per call segment.
-  - [ ] Dense embeddings via Sentence Transformers stored in `pgvector`.
-  - [ ] Hybrid text & semantic search endpoint.
-- [ ] **Phase 3 — Analytics & Executive Dashboards**
-  - [ ] Interactive waveforms with synchronized transcript playback.
-  - [ ] Escalation risk alerting and agent performance metrics.
-  - [ ] Unsupervised trend & topic clustering with UMAP + HDBSCAN.
+Developed as an Engineering Project demonstrating modern **Full-Stack Software Architecture**, **Distributed Systems**, and **AI Intelligence Pipelines**.
 
----
-
-## 📄 License & Attribution
-
-Developed as a Final-Year Engineering Project demonstrating modern **Full-Stack Software Engineering**, **Distributed Microservices**, and **Applied AI Systems**.
-
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License.
