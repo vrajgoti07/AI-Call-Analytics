@@ -1,0 +1,89 @@
+# ========================
+# Python
+# ========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+*.whl
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# ========================
+# Node / Frontend
+# ========================
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+
+# ========================
+# Environment & Secrets
+# ========================
+.env
+.env.local
+.env.*.local
+
+# ========================
+# IDE
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ========================
+# Docker
+# ========================
+docker-compose.override.yml
+
+# ========================
+# Data & Models (large files)
+# ========================
+data/raw/*
+data/processed/*
+data/training/*
+data/validation/*
+data/evaluation/*
+models/*.bin
+models/*.pt
+models/*.onnx
+models/*.pkl
+!data/**/.gitkeep
+!models/.gitkeep
+
+# ========================
+# Logs
+# ========================
+*.log
+logs/
+
+# ========================
+# Testing / Coverage
+# ========================
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# ========================
+# Notebooks checkpoints
+# ========================
+.ipynb_checkpoints/
+
+# ========================
+# OS
+# ========================
+*.DS_Store
+desktop.ini

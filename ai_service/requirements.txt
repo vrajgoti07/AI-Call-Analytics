@@ -1,0 +1,38 @@
+# ============================================================
+# AI Call Analytics — AI Service Dependencies
+# ============================================================
+# Install phase-by-phase. Only uncommented packages are needed
+# for the current phase.
+# Some packages (e.g., pyannote.audio) require a Hugging Face
+# access token and license acceptance.
+# ============================================================
+
+# ---- Phase 1: Dataset Loading & Inspection ----
+datasets>=3.0.0
+soundfile>=0.12.1
+librosa>=0.10.2
+numpy>=1.26.0
+pandas>=2.2.0
+
+# ---- Audio Processing ----
+# pydub==0.25.1
+
+# ---- Speech-to-Text (ASR) ----
+# faster-whisper==1.0.3
+
+# ---- Speaker Diarization ----
+# pyannote.audio==3.3.2
+
+# ---- NLP ----
+# transformers==4.44.2
+# spacy==3.7.6
+# sentence-transformers==3.1.1
+
+# ---- ML / Clustering ----
+# scikit-learn==1.5.2
+# umap-learn==0.5.6
+# hdbscan==0.8.38.post1
+# xgboost==2.1.1
+
+# ---- Deep Learning ----
+# torch==2.4.1
