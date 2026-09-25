@@ -18,19 +18,19 @@ pandas>=2.2.0
 # pydub==0.25.1
 
 # ---- Speech-to-Text (ASR) ----
-# faster-whisper==1.0.3
+faster-whisper>=1.0.3
 
 # ---- Speaker Diarization ----
-# pyannote.audio==3.3.2
+pyannote.audio>=3.3.2
 
 # ---- NLP ----
-# transformers==4.44.2
-# spacy==3.7.6
-# sentence-transformers==3.1.1
+transformers>=4.44.2
+spacy>=3.7.6
+sentence-transformers>=3.1.1
 
 # ---- ML / Clustering ----
-# scikit-learn==1.5.2
-# umap-learn==0.5.6
+scikit-learn>=1.5.2
+umap-learn>=0.5.6
 # hdbscan==0.8.38.post1
 # xgboost==2.1.1
 

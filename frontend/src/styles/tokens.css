@@ -1,0 +1,117 @@
+/**
+ * AI Call Analytics — Production Design Tokens & Visual Architecture.
+ *
+ * Implements a warm neutral foundation designed for premium B2B AI & conversational intelligence:
+ * - Canvas Background: Warm off-white (#F7F7F5)
+ * - Surfaces: Crisp white (#FFFFFF) with subtle warm neutral boundaries (#E5E5E2)
+ * - Typography: Deep charcoal (#17181C) with readable secondary tones (#60636B)
+ * - Primary Brand: Sophisticated violet/plum (#6D5AE6) used with discipline for key focal points
+ * - Semantic Status: Calibrated emerald (success), amber (warning), crimson (danger), sky (info)
+ * - Charts: High-contrast 6-tier categorical palette for light surfaces
+ */
+
+:root {
+  /* =========================================================================
+   * 1. WARM NEUTRAL FOUNDATION & SURFACES
+   * ========================================================================= */
+  --color-canvas: #F7F7F5;            /* Warm off-white page background */
+  --color-surface-subtle: #FAFAF9;     /* Subtle warm neutral for table headers/code */
+  --color-surface-card: #FFFFFF;       /* Pure white card surface */
+  --color-surface-elevated: #FFFFFF;   /* Modal, dropdown, drawer surface */
+  --color-surface-hover: #F2F2F0;      /* Subtle interactive hover */
+
+  /* Neutral Borders */
+  --color-border-subtle: #EFEFEC;     /* Table rows, dividers */
+  --color-border-default: #E5E5E2;    /* Card and input borders */
+  --color-border-highlight: #D1D1CD;  /* Hover / strong boundary */
+
+  /* Typography / Text */
+  --color-text-primary: #17181C;       /* Deep charcoal primary body & headings */
+  --color-text-secondary: #60636B;     /* Muted neutral supporting text */
+  --color-text-muted: #8A8D95;         /* Timestamps, metadata, micro-captions */
+  --color-text-faint: #B4B6BC;         /* Disabled, empty placeholders */
+
+  /* =========================================================================
+   * 2. BRAND PRIMARY ACCENT (Sophisticated Violet / Plum)
+   * ========================================================================= */
+  --color-primary-50: #F5F3FF;
+  --color-primary-100: #EDE9FE;
+  --color-primary-200: #DDD6FE;
+  --color-primary-300: #C4B5FD;
+  --color-primary-400: #A78BFA;
+  --color-primary-500: #6D5AE6;        /* Primary brand accent */
+  --color-primary-600: #5844D6;        /* Interactive hover */
+  --color-primary-700: #4834C4;        /* Active press */
+  --color-primary-subtle: #F2F0FD;     /* Soft active navigation & badge wash */
+  --color-primary-foreground: #FFFFFF; /* High-contrast text on primary buttons */
+
+  --color-primary: var(--color-primary-500);
+  --color-primary-hover: var(--color-primary-600);
+
+  /* =========================================================================
+   * 3. SEMANTIC STATUS & RISK TOKENS (Light-Mode Calibrated)
+   * ========================================================================= */
+  /* Success / Completed / Positive Sentiment */
+  --color-success-text: #047857;       /* Emerald-700 */
+  --color-success-bg: #ECFDF5;         /* Emerald-50 */
+  --color-success-border: #A7F3D0;     /* Emerald-200 */
+
+  /* Warning / Processing / Medium Risk */
+  --color-warning-text: #B45309;       /* Amber-700 */
+  --color-warning-bg: #FFFBEB;         /* Amber-50 */
+  --color-warning-border: #FDE68A;     /* Amber-200 */
+
+  /* Danger / Failed / Negative / High Escalation Risk */
+  --color-danger-text: #B91C1C;        /* Red-700 */
+  --color-danger-bg: #FEF2F2;          /* Red-50 */
+  --color-danger-border: #FECACA;      /* Red-200 */
+
+  /* Info / Acoustic Classifier */
+  --color-info-text: #0369A1;          /* Sky-700 */
+  --color-info-bg: #F0F9FF;            /* Sky-50 */
+  --color-info-border: #BAE6FD;        /* Sky-200 */
+
+  /* =========================================================================
+   * 4. DATA VISUALIZATION CATEGORICAL PALETTE
+   * ========================================================================= */
+  --color-chart-1: #6D5AE6;   /* Violet / Plum (Primary) */
+  --color-chart-2: #10B981;   /* Emerald Green (Completed / Low Risk) */
+  --color-chart-3: #F59E0B;   /* Warm Amber (Processing / Medium Risk) */
+  --color-chart-4: #EF4444;   /* Crimson Red (Failed / High Risk) */
+  --color-chart-5: #0EA5E9;   /* Acoustic Sky (Diarization / Turn) */
+  --color-chart-6: #8B5CF6;   /* Lavender Iris (Themes / Topics) */
+  --color-chart-neutral: #94A3B8; /* Slate Neutral */
+
+  /* =========================================================================
+   * 5. RADII & ELEVATION HIERARCHY
+   * ========================================================================= */
+  --radius-xs: 4px;          /* micro tags, inline keycaps */
+  --radius-sm: 6px;          /* buttons, inputs, badge chips */
+  --radius-md: 8px;          /* dropdown items, dialogue chips */
+  --radius-lg: 12px;         /* cards, panels, audio dock */
+  --radius-xl: 16px;         /* elevated modals, outer containers */
+  --radius-full: 9999px;     /* pills, round avatar avatars */
+
+  /* Elevation Shadows (Restrained, subtle depth on warm neutral canvas) */
+  --shadow-subtle: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.03);
+  --shadow-elevated: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+  --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.04);
+  --shadow-focus-ring: 0 0 0 3px rgba(109, 90, 230, 0.2);
+}
+
+/* =========================================================================
+ * 6. TYPOGRAPHIC UTILITIES FOR ANALYTICS
+ * ========================================================================= */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

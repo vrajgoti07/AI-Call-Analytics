@@ -26,20 +26,94 @@ Each entry covers: modality, purpose, license, training/evaluation role, and kno
 ### Purpose
 Primary audio dataset for developing the speech-to-text and spoken intent classification pipeline. Contains real spoken utterances with human transcriptions and intent labels across 14 categories.
 
-### Known Limitations
-- Relatively small dataset (hundreds of examples per split, not thousands).
-- E-banking domain only — may not generalize to other support domains without additional data.
-- Class distribution may be imbalanced.
-- Audio quality and accent diversity limited to the recording conditions.
+### Configuration & Loading
+
+The loader is located in `ai_service.datasets.minds14_loader` and can be imported directly or via `ai_service.datasets`.
+
+```python
+from ai_service.datasets import load_minds14, inspect_minds14, validate_minds14, prepare_splits
+
+# 1. Load default en-US subset (explicit loading, no auto-download on app startup)
+dataset = load_minds14(subset="en-US", split="train", decode_audio=False)
+
+# 2. Configurable cache / offline paths
+# Supports MINDS14_CACHE_DIR or HF_HOME environment variables
+dataset = load_minds14(subset="en-US", cache_dir="./models/huggingface")
+
+# 3. Load from local disk if pre-downloaded
+dataset = load_minds14(data_dir="./data/raw/minds14_en_us")
+```
+
+### Expected Dataset Structure & Schema
+
+The dataset exposes 6 standard features:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `path` | `Value('string')` | Local audio file path or identifier |
+| `audio` | `Audio(decode=False)` | Audio dictionary containing `bytes` or `array` and sampling metadata |
+| `transcription` | `Value('string')` | Spoken customer utterance transcribed in natural text |
+| `english_transcription` | `Value('string')` | English translation (identical to `transcription` for `en-US`) |
+| `intent_class` | `ClassLabel(14)` | Categorical integer label ID [0–13] representing customer intent |
+| `lang_id` | `ClassLabel(14)` | Language identifier (index 4 for `en-US`) |
+
+The module provides strongly typed dataclass models for all inspection telemetry:
+- `ClassDistributionReport` / `ClassDistributionItem` (counts, frequencies, percentages)
+- `MissingDataReport` (`audio_missing`, `text_missing`, `label_missing`, `total_invalid_rows`, per-column percentages)
+- `DuplicateDataReport` (`total_records`, `non_empty_records`, `unique_records`, `duplicate_records`, `duplicate_percentage`)
+- `AudioMetadataReport` (durations, sampling rate, channels, format, `metadata_source`)
+- `SplitInfo` (train, validation, test sample counts and percentages)
+- `ValidationResult` (`valid`, `errors`, `warnings`, `statistics`)
+- `DatasetSummary` (composite typed summary)
+
+### Audio Validation & Metadata
+
+The loader distinguishes between two metadata extraction modes:
+1. **Direct Stream Header (`metadata_source="direct_header"`)**: Reads duration, sampling rate, channel count, and format directly from audio file/stream headers (`soundfile.info`) without decoding the full PCM array into memory.
+2. **Decoded Array (`metadata_source="decoded_array"`)**: Extracts array length and channels from pre-decoded float32 numpy arrays when `decode_audio=True`.
+
+### Train / Validation / Test Stratified Split
+
+- **Official Split Limitation**: Hugging Face `PolyAI/minds14` distributes only a single `train` split of 563 examples for `en-US`. No official validation or test splits exist.
+- **Leakage Prevention**: To evaluate downstream models reliably, `prepare_splits()` creates deterministic, stratified partitions (default 80/10/10) keyed by `intent_class`.
+- **Resulting Splits (Seed 42)**:
+  - **Train**: 450 examples (79.9%, 14/14 classes represented)
+  - **Validation**: 56 examples (9.9%, 14/14 classes represented)
+  - **Test**: 57 examples (10.1%, 14/14 classes represented)
+  - **Total**: 563 examples
+
+### Data Validation Rules
+
+The module provides `validate_minds14(dataset)` which verifies:
+1. Dataset is non-empty.
+2. Required columns (`audio`, `transcription`, `intent_class`) are present.
+3. Intent labels are within valid integer range `[0, 13]`.
+4. Audio entries have valid headers, duration > 0, and valid sampling rate.
+5. Text entries are non-null strings.
+6. Validation returns a structured `ValidationResult` with `valid: bool`, `errors: list[str]`, `warnings: list[str]`, and `statistics: dict`.
+
+### How to Run Inspection & Validation
+
+```bash
+# Run programmatic inspection and generate report
+python scripts/inspect_minds14.py
+```
+
+### How to Run Tests
+
+```bash
+# Run unit and integration tests
+python -m pytest tests/ -v
+```
 
 ### Verified Programmatic Statistics (en-US Subset)
 
 Inspected programmatically via `scripts/inspect_minds14.py`:
 
-- **Split Structure**: Only `train` split provided by Hugging Face (`train`: 563 examples, `test`: none built-in, train/test split must be created programmatically for training/eval).
+- **Split Structure**: Only `train` split provided natively by Hugging Face (563 examples).
 - **Total Examples**: 563
-- **Audio Availability**: 563 / 563 (100%)
-- **Audio Format & Sampling Rate**: 8000 Hz (mono WAV), decodable via `soundfile`.
+- **Audio Availability**: 563 / 563 (100% available, 0 missing)
+- **Audio Format & Sampling Rate**: 8000 Hz, 1 channel (mono), WAV container.
 - **Audio Duration Statistics**:
   - Min duration: 1.707 seconds
   - Max duration: 58.453 seconds
@@ -47,25 +121,32 @@ Inspected programmatically via `scripts/inspect_minds14.py`:
   - Median duration: 6.400 seconds
   - Total duration: 4,829.067 seconds (80.48 minutes / ~1.34 hours)
 - **Transcription Columns**:
-  - `transcription`: 563 examples (541 unique, 22 duplicate utterances)
-  - `english_transcription`: 563 examples (identical to `transcription` for en-US)
-- **Missing Values**: 0 missing across all columns (`path`, `audio`, `transcription`, `english_transcription`, `intent_class`, `lang_id`).
+  - `transcription`: 563 records (541 unique, 22 duplicate utterances, **3.91% duplicates**)
+  - `english_transcription`: 563 records (identical to `transcription` for en-US)
+- **Missing Data Audit**:
+  - `audio_missing`: 0
+  - `text_missing`: 0
+  - `label_missing`: 0
+  - `total_invalid_rows`: 0
+  - 0 missing values across all columns (`path`, `audio`, `transcription`, `english_transcription`, `intent_class`, `lang_id`).
 - **Intent Classes (14 total)**:
-  - `cash_deposit`: 48 (8.5%)
-  - `card_issues`: 46 (8.2%)
-  - `freeze`: 45 (8.0%)
-  - `joint_account`: 42 (7.5%)
-  - `app_error`: 42 (7.5%)
-  - `balance`: 41 (7.3%)
-  - `pay_bill`: 41 (7.3%)
-  - `atm_limit`: 41 (7.3%)
-  - `high_value_payment`: 40 (7.1%)
-  - `business_loan`: 39 (6.9%)
-  - `direct_debit`: 36 (6.4%)
-  - `address`: 34 (6.0%)
-  - `abroad`: 34 (6.0%)
-  - `latest_transactions`: 34 (6.0%)
-  - Total: 563 examples (relatively well balanced across the 14 classes, ranging between 34 and 48 per class).
+  - `cash_deposit`: 48 (8.53%)
+  - `card_issues`: 46 (8.17%)
+  - `freeze`: 45 (7.99%)
+  - `joint_account`: 42 (7.46%)
+  - `app_error`: 42 (7.46%)
+  - `balance`: 41 (7.28%)
+  - `pay_bill`: 41 (7.28%)
+  - `atm_limit`: 41 (7.28%)
+  - `high_value_payment`: 40 (7.10%)
+  - `business_loan`: 39 (6.93%)
+  - `direct_debit`: 36 (6.39%)
+  - `address`: 34 (6.04%)
+  - `abroad`: 34 (6.04%)
+  - `latest_transactions`: 34 (6.04%)
+  - Total: 563 examples (well balanced across all 14 classes, ranging between 34 and 48 per class).
+- **Validation Audit**:
+  - Status: PASSED (0 errors, 0 warnings)
 
 ---
 

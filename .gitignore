@@ -60,6 +60,7 @@ models/*.bin
 models/*.pt
 models/*.onnx
 models/*.pkl
+models/huggingface/
 !data/**/.gitkeep
 !models/.gitkeep
 
