@@ -6,6 +6,7 @@ import { SentimentBadge } from '../components/ui/SentimentBadge'
 import { RiskBadge } from '../components/ui/RiskBadge'
 import { MetricCard } from '../components/ui/MetricCard'
 import { EmptyState } from '../components/ui/EmptyState'
+import { ErrorAlert } from '../components/ui/ErrorAlert'
 
 describe('Reusable UI Components', () => {
   it('renders Button with text and handles loading state', () => {
@@ -63,5 +64,24 @@ describe('Reusable UI Components', () => {
     expect(
       screen.getByText('Try adjusting your filters or upload a new recording.'),
     ).toBeInTheDocument()
+  })
+
+  it('renders ErrorAlert with title, message, and retry button', () => {
+    let retried = false
+    render(
+      <ErrorAlert
+        title="Network Disconnected"
+        message="Unable to connect to backend service"
+        onRetry={() => {
+          retried = true
+        }}
+      />,
+    )
+    expect(screen.getByText('Network Disconnected')).toBeInTheDocument()
+    expect(screen.getByText('Unable to connect to backend service')).toBeInTheDocument()
+    const retryBtn = screen.getByRole('button', { name: /retry/i })
+    expect(retryBtn).toBeInTheDocument()
+    retryBtn.click()
+    expect(retried).toBe(true)
   })
 })

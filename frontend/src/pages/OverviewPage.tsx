@@ -12,10 +12,11 @@ import { StatusBadge } from '../components/ui/StatusBadge'
 import { Button } from '../components/ui/Button'
 import { ErrorAlert } from '../components/ui/ErrorAlert'
 import { EmptyState } from '../components/ui/EmptyState'
+import { ChartTooltip } from '../components/ui/ChartTooltip'
 import { useCalls } from '../hooks/useCalls'
 import { useThemes } from '../hooks/useThemes'
 import { formatDateTime, formatDuration } from '../lib/utils'
-import { CHART_PALETTE } from '../lib/constants'
+import { CHART_PALETTE, RECHARTS_TOOLTIP_STYLE } from '../lib/constants'
 
 export function OverviewPage() {
   const { data: callsData, isLoading: callsLoading, isError: callsError, error, refetch } = useCalls({
@@ -41,20 +42,23 @@ export function OverviewPage() {
   const calls = callsData?.items ?? []
   const totalCalls = callsData?.pagination?.total ?? calls.length
   const completedCalls = calls.filter((c) => c.status === 'COMPLETED').length
-  const processingCalls = calls.filter((c) => c.status === 'PROCESSING' || c.status === 'QUEUED').length
+  const processingCalls = calls.filter((c) => c.status === 'PROCESSING').length
+  const queuedCalls = calls.filter((c) => c.status === 'QUEUED').length
   const failedCalls = calls.filter((c) => c.status === 'FAILED').length
+  const uploadedCalls = calls.filter((c) => c.status === 'UPLOADED').length
 
   // Calculate average duration across calls with duration
   const durations = calls.map((c) => c.duration).filter((d): d is number => d !== null && d !== undefined)
   const avgDuration =
     durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0
 
-  // Status breakdown using deliberate categorical palette
+  // Status breakdown using deliberate semantic status palette
   const statusDistribution = [
-    { name: 'Completed', value: completedCalls, color: CHART_PALETTE.success },
-    { name: 'Processing', value: processingCalls, color: CHART_PALETTE.warning },
-    { name: 'Failed', value: failedCalls, color: CHART_PALETTE.danger },
-    { name: 'Uploaded', value: Math.max(0, totalCalls - completedCalls - processingCalls - failedCalls), color: CHART_PALETTE.primary },
+    { name: 'Completed', value: completedCalls, color: CHART_PALETTE.status.completed },
+    { name: 'Processing', value: processingCalls, color: CHART_PALETTE.status.processing },
+    { name: 'Queued', value: queuedCalls, color: CHART_PALETTE.status.queued },
+    { name: 'Failed', value: failedCalls, color: CHART_PALETTE.status.failed },
+    { name: 'Uploaded', value: uploadedCalls, color: CHART_PALETTE.status.uploaded },
   ].filter((d) => d.value > 0)
 
   // Recent 5 calls for quick queue
@@ -120,7 +124,7 @@ export function OverviewPage() {
       {/* Middle Analytical Row (Chart + Discovered Themes) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Pipeline Execution Breakdown Chart */}
-        <div className="lg:col-span-6 rounded-xl border border-[#E5E5E2] bg-white p-5 shadow-xs">
+        <div className="lg:col-span-6 rounded-xl border border-[#E5E5E2] bg-white p-5 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-[#17181C]">
               Pipeline Execution Status Breakdown
@@ -128,7 +132,7 @@ export function OverviewPage() {
             <span className="text-xs text-[#60636B] font-mono tabular-nums">{totalCalls} total</span>
           </div>
 
-          {statusDistribution.length > 0 ? (
+          {statusDistribution.length > 1 ? (
             <div className="h-56 flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -143,16 +147,7 @@ export function OverviewPage() {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#FFFFFF',
-                      borderColor: '#E5E5E2',
-                      borderRadius: '8px',
-                      color: '#17181C',
-                      fontSize: '12px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04)',
-                    }}
-                  />
+                  <Tooltip content={<ChartTooltip />} contentStyle={RECHARTS_TOOLTIP_STYLE} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex flex-col gap-2 pl-4 border-l border-[#E5E5E2]">
@@ -166,6 +161,50 @@ export function OverviewPage() {
                     <span className="font-mono font-semibold text-[#17181C] tabular-nums">{item.value}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          ) : statusDistribution.length === 1 ? (
+            <div className="h-56 flex flex-col justify-center gap-4 px-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-3 w-3 rounded-full"
+                    style={{ backgroundColor: statusDistribution[0].color }}
+                  />
+                  <span className="text-sm font-semibold text-[#17181C]">
+                    {statusDistribution[0].name} ({statusDistribution[0].value} of {totalCalls})
+                  </span>
+                </div>
+                <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  100% Pipeline Health
+                </span>
+              </div>
+              <div className="w-full h-3 bg-[#F2F2F0] rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: '100%',
+                    backgroundColor: statusDistribution[0].color,
+                  }}
+                />
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-xs">
+                <div className="p-2 rounded border border-[#E5E5E2] bg-[#FAFAF9]">
+                  <span className="text-[#60636B] block text-[11px]">Completed</span>
+                  <span className="font-mono font-bold text-[#17181C] tabular-nums">{completedCalls}</span>
+                </div>
+                <div className="p-2 rounded border border-[#E5E5E2] bg-[#FAFAF9]">
+                  <span className="text-[#60636B] block text-[11px]">Processing</span>
+                  <span className="font-mono font-bold text-[#17181C] tabular-nums">{processingCalls}</span>
+                </div>
+                <div className="p-2 rounded border border-[#E5E5E2] bg-[#FAFAF9]">
+                  <span className="text-[#60636B] block text-[11px]">Failed</span>
+                  <span className="font-mono font-bold text-[#17181C] tabular-nums">{failedCalls}</span>
+                </div>
+                <div className="p-2 rounded border border-[#E5E5E2] bg-[#FAFAF9]">
+                  <span className="text-[#60636B] block text-[11px]">Queued</span>
+                  <span className="font-mono font-bold text-[#17181C] tabular-nums">{queuedCalls}</span>
+                </div>
               </div>
             </div>
           ) : (

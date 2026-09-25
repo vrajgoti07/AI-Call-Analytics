@@ -30,7 +30,7 @@ export function RiskScoreCard({ risk, isLoading = false }: RiskScoreCardProps) {
     )
   }
 
-  const isHighRisk = risk.risk_level === 'high' || risk.risk_score >= 70
+  const isHighRisk = (risk.risk_level || '').toLowerCase() === 'high' || risk.risk_score >= 70
 
   return (
     <div
@@ -46,7 +46,7 @@ export function RiskScoreCard({ risk, isLoading = false }: RiskScoreCardProps) {
           <AlertTriangle
             className={`h-4 w-4 ${isHighRisk ? 'text-rose-600' : 'text-[#8A8D95]'}`}
           />
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-[#60636B]">
+          <h4 className="text-xs font-semibold text-[#17181C]">
             Escalation Risk Assessment
           </h4>
         </div>
@@ -89,12 +89,12 @@ export function RiskScoreCard({ risk, isLoading = false }: RiskScoreCardProps) {
       {/* Top Contributing Factors Waterfall */}
       {risk.top_factors && risk.top_factors.length > 0 && (
         <div className="space-y-2 pt-2 border-t border-[#E5E5E2]">
-          <span className="text-xs font-semibold text-[#60636B] uppercase tracking-wider block">
+          <span className="text-xs font-semibold text-[#17181C] block">
             Top Driving Risk Factors:
           </span>
           <div className="space-y-1.5">
             {risk.top_factors.map((factor, index) => {
-              const rawName = factor.factor || factor.name || `Factor ${index + 1}`
+              const rawName = factor.display_name || factor.feature || factor.factor || factor.name || `Factor ${index + 1}`
               const name = String(rawName)
               const impact = factor.contribution ?? factor.score ?? 0
               const impactPercent = typeof impact === 'number' ? Math.round(impact * 100) : 0
@@ -102,15 +102,22 @@ export function RiskScoreCard({ risk, isLoading = false }: RiskScoreCardProps) {
               return (
                 <div
                   key={index}
-                  className="flex items-center justify-between text-xs p-2 rounded-lg bg-[#FAFAF9] border border-[#E5E5E2]"
+                  className="flex flex-col gap-1 p-2 rounded-lg bg-[#FAFAF9] border border-[#E5E5E2]"
                 >
-                  <span className="text-[#17181C] truncate max-w-[220px]">
-                    • {name.replace(/_/g, ' ')}
-                  </span>
-                  {impactPercent > 0 && (
-                    <span className="font-mono text-rose-600 font-semibold text-[11px] tabular-nums">
-                      +{impactPercent}%
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-[#17181C] font-medium truncate max-w-[220px]">
+                      • {name.replace(/_/g, ' ')}
                     </span>
+                    {impactPercent > 0 && (
+                      <span className="font-mono text-rose-600 font-semibold text-[11px] tabular-nums">
+                        +{impactPercent}%
+                      </span>
+                    )}
+                  </div>
+                  {factor.description && (
+                    <p className="text-[11px] text-[#60636B] pl-2 leading-tight">
+                      {factor.description}
+                    </p>
                   )}
                 </div>
               )

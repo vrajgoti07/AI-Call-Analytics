@@ -164,7 +164,7 @@ export function TranscriptViewer({
               {/* Entity Badges (Masked PII) */}
               {turn.entities && turn.entities.length > 0 && (
                 <div className="mt-2.5 flex flex-wrap items-center gap-1.5 pt-2 border-t border-[#E5E5E2]/80">
-                  <span className="text-[10px] text-[#8A8D95] uppercase font-mono tracking-wider">
+                  <span className="text-[10px] text-[#60636B] font-medium">
                     Entities:
                   </span>
                   {turn.entities.map((ent, idx) => (
@@ -173,7 +173,7 @@ export function TranscriptViewer({
                       className="px-2 py-0.5 rounded text-[11px] font-mono bg-[#FAFAF9] text-[#5844D6] border border-[#E5E5E2]"
                       title={`Type: ${ent.entity_type}`}
                     >
-                      [{ent.entity_type}] {ent.text}
+                      [{ent.entity_type}] {ent.text || ent.masked_text || ent.entity_type}
                     </span>
                   ))}
                 </div>

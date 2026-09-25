@@ -75,7 +75,8 @@ export interface TranscriptTurnResponse {
   } | null
   entities: Array<{
     entity_type: string
-    text: string
+    text?: string
+    masked_text?: string
     start?: number
     end?: number
   }> | null
@@ -132,9 +133,13 @@ export interface AnalysisSummaryResponse {
 }
 
 export interface RiskFactor {
-  factor: string
+  feature?: string
+  display_name?: string
+  value?: number
   contribution?: number
   score?: number
+  factor?: string
+  name?: string
   description?: string
   [key: string]: unknown
 }

@@ -152,7 +152,11 @@ export function JobsPage() {
                         <div className="w-36 h-1.5 bg-[#EFEFEC] rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all ${
-                              job.status === 'FAILURE' ? 'bg-rose-500' : 'bg-[#6D5AE6]'
+                              job.status === 'FAILURE' || job.status === 'FAILED'
+                                ? 'bg-rose-500'
+                                : job.status === 'SUCCESS' || job.status === 'COMPLETED'
+                                ? 'bg-emerald-500'
+                                : 'bg-[#6D5AE6]'
                             }`}
                             style={{ width: `${Math.max(5, job.progress)}%` }}
                           />

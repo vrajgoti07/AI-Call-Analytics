@@ -92,7 +92,7 @@ export function EvaluationPage() {
           <div className="p-4 rounded-xl border border-[#E5E5E2] bg-white space-y-2 shadow-xs">
             <div className="flex items-center justify-between text-xs">
               <span className="text-[#60636B] font-semibold">Diarization</span>
-              <Badge variant="success">PASSED</Badge>
+              <Badge variant={diarization.status === 'PASSED' ? 'success' : 'warning'}>{diarization.status}</Badge>
             </div>
             <div className="text-2xl font-bold font-mono text-[#17181C] tabular-nums">
               Coverage: {formatPercentage(diarization.metrics.average_alignment_coverage as number)}
@@ -108,7 +108,7 @@ export function EvaluationPage() {
           <div className="p-4 rounded-xl border border-[#E5E5E2] bg-white space-y-2 shadow-xs">
             <div className="flex items-center justify-between text-xs">
               <span className="text-[#60636B] font-semibold">Intent Classifier</span>
-              <Badge variant="success">PASSED</Badge>
+              <Badge variant={intent.status === 'PASSED' ? 'success' : 'warning'}>{intent.status}</Badge>
             </div>
             <div className="text-2xl font-bold font-mono text-[#17181C] tabular-nums">
               F1: {formatPercentage(intent.metrics.macro_f1 as number)}

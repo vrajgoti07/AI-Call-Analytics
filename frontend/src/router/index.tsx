@@ -1,34 +1,141 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Suspense, lazy } from 'react'
+import { Link, Navigate, Route, Routes } from 'react-router-dom'
 import { ApplicationShell } from '../components/layout/ApplicationShell'
-import { OverviewPage } from '../pages/OverviewPage'
-import { CallsPage } from '../pages/CallsPage'
-import { CallDetailPage } from '../pages/CallDetailPage'
-import { SearchPage } from '../pages/SearchPage'
-import { ThemesPage } from '../pages/ThemesPage'
-import { ThemeDetailPage } from '../pages/ThemeDetailPage'
-import { RiskPage } from '../pages/RiskPage'
-import { EvaluationPage } from '../pages/EvaluationPage'
-import { JobsPage } from '../pages/JobsPage'
-import { SettingsPage } from '../pages/SettingsPage'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Button } from '../components/ui/Button'
-import { Link } from 'react-router-dom'
+
+// Lazy-loaded routes for code-splitting and performance
+const OverviewPage = lazy(() =>
+  import('../pages/OverviewPage').then((m) => ({ default: m.OverviewPage })),
+)
+const CallsPage = lazy(() =>
+  import('../pages/CallsPage').then((m) => ({ default: m.CallsPage })),
+)
+const CallDetailPage = lazy(() =>
+  import('../pages/CallDetailPage').then((m) => ({ default: m.CallDetailPage })),
+)
+const SearchPage = lazy(() =>
+  import('../pages/SearchPage').then((m) => ({ default: m.SearchPage })),
+)
+const ThemesPage = lazy(() =>
+  import('../pages/ThemesPage').then((m) => ({ default: m.ThemesPage })),
+)
+const ThemeDetailPage = lazy(() =>
+  import('../pages/ThemeDetailPage').then((m) => ({ default: m.ThemeDetailPage })),
+)
+const RiskPage = lazy(() =>
+  import('../pages/RiskPage').then((m) => ({ default: m.RiskPage })),
+)
+const EvaluationPage = lazy(() =>
+  import('../pages/EvaluationPage').then((m) => ({ default: m.EvaluationPage })),
+)
+const JobsPage = lazy(() =>
+  import('../pages/JobsPage').then((m) => ({ default: m.JobsPage })),
+)
+const SettingsPage = lazy(() =>
+  import('../pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),
+)
+
+function PageLoadingFallback() {
+  return (
+    <div className="p-6 space-y-4 animate-in fade-in duration-100">
+      <div className="h-7 w-1/3 bg-[#F2F2F0] rounded-md animate-pulse" />
+      <div className="h-4 w-1/2 bg-[#F2F2F0] rounded-md animate-pulse" />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-28 rounded-xl bg-[#F2F2F0] animate-pulse" />
+        ))}
+      </div>
+      <div className="h-64 rounded-xl bg-[#F2F2F0] animate-pulse mt-6" />
+    </div>
+  )
+}
 
 export function AppRouter() {
   return (
     <Routes>
       <Route element={<ApplicationShell />}>
         <Route path="/" element={<Navigate to="/overview" replace />} />
-        <Route path="/overview" element={<OverviewPage />} />
-        <Route path="/calls" element={<CallsPage />} />
-        <Route path="/calls/:callId" element={<CallDetailPage />} />
-        <Route path="/search" element={<SearchPage />} />
-        <Route path="/themes" element={<ThemesPage />} />
-        <Route path="/themes/:themeId" element={<ThemeDetailPage />} />
-        <Route path="/risk" element={<RiskPage />} />
-        <Route path="/evaluation" element={<EvaluationPage />} />
-        <Route path="/jobs" element={<JobsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
+        <Route
+          path="/overview"
+          element={
+            <Suspense fallback={<PageLoadingFallback />}>
+              <OverviewPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/calls"
+          element={
+            <Suspense fallback={<PageLoadingFallback />}>
+              <CallsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/calls/:callId"
+          element={
+            <Suspense fallback={<PageLoadingFallback />}>
+              <CallDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/search"
+          element={
+            <Suspense fallback={<PageLoadingFallback />}>
+              <SearchPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/themes"
+          element={
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ThemesPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/themes/:themeId"
+          element={
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ThemeDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/risk"
+          element={
+            <Suspense fallback={<PageLoadingFallback />}>
+              <RiskPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/evaluation"
+          element={
+            <Suspense fallback={<PageLoadingFallback />}>
+              <EvaluationPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/jobs"
+          element={
+            <Suspense fallback={<PageLoadingFallback />}>
+              <JobsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <Suspense fallback={<PageLoadingFallback />}>
+              <SettingsPage />
+            </Suspense>
+          }
+        />
         <Route
           path="*"
           element={

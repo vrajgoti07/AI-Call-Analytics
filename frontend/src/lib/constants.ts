@@ -8,16 +8,48 @@ export const API_V1 = `${API_BASE_URL}/api/v1`
 
 /**
  * Deliberate 6-tier categorical data visualization palette for light backgrounds.
+ * Respects strict separation:
+ * - Brand Accent: Violet (#6D5AE6)
+ * - Status / Risk Semantics: Emerald (Completed/Low), Amber (Processing/Med), Red (Failed/High)
+ * - Categorical Facets: Multi-color non-semantic assignments (Sky, Iris, Rose, Emerald, Amber, Violet)
  */
 export const CHART_PALETTE = {
-  primary: '#6D5AE6',   // Sophisticated Violet / Plum (Primary)
+  primary: '#6D5AE6',   // Sophisticated Violet / Plum (Brand)
   success: '#10B981',   // Emerald Green (Completed / Low Risk)
   warning: '#F59E0B',   // Warm Amber (Processing / Medium Risk)
   danger: '#EF4444',    // Crimson Red (Failed / High Risk)
   sky: '#0EA5E9',       // Sky Blue (Acoustic / Alternate Speaker)
   violet: '#8B5CF6',    // Iris (Topic / Cluster)
   neutral: '#94A3B8',   // Slate Neutral (Background / Outliers)
+  status: {
+    completed: '#10B981',
+    processing: '#F59E0B',
+    failed: '#EF4444',
+    uploaded: '#6D5AE6',
+    queued: '#94A3B8',
+  },
+  categorical: [
+    '#6D5AE6',
+    '#0EA5E9',
+    '#F59E0B',
+    '#10B981',
+    '#8B5CF6',
+    '#F43F5E',
+  ],
 } as const
+
+/**
+ * Standard Recharts tooltip styling matching design tokens.
+ */
+export const RECHARTS_TOOLTIP_STYLE: React.CSSProperties = {
+  backgroundColor: '#FFFFFF',
+  borderColor: '#E5E5E2',
+  borderRadius: '8px',
+  color: '#17181C',
+  fontSize: '12px',
+  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04)',
+  padding: '8px 12px',
+}
 
 export const STATUS_CONFIG: Record<
   string,

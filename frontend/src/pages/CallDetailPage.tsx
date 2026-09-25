@@ -32,7 +32,7 @@ export function CallDetailPage() {
   // Real backend queries
   const { data: call, isError: callError, error, refetch: refetchCall } = useCall(callId)
   const { data: transcript, isLoading: transcriptLoading } = useTranscript(callId)
-  const { data: turnsData, isLoading: turnsLoading } = useTranscriptTurns(callId, 1, 200)
+  const { data: turnsData, isLoading: turnsLoading } = useTranscriptTurns(callId, 1, 100)
   const { data: risk, isLoading: riskLoading, refetch: refetchRisk } = useRisk(callId)
   const { data: summary, isLoading: summaryLoading } = useAnalysisSummary(callId)
   const { data: analysisStatus } = useAnalysisStatus(callId)

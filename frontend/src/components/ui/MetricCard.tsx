@@ -47,7 +47,7 @@ export function MetricCard({
     >
       <div className="flex items-center justify-between text-[#60636B] text-sm font-medium">
         <span>{title}</span>
-        {icon && <div className="text-[#8A8D95] shrink-0">{icon}</div>}
+        {icon && <div className="shrink-0">{icon}</div>}
       </div>
 
       <div className="mt-3 flex items-baseline gap-2">

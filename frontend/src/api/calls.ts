@@ -3,6 +3,7 @@
  */
 
 import { apiClient } from './client'
+import { API_BASE_URL } from '../lib/constants'
 import type { CallCreate, CallDetailResponse, CallListParams, CallListResponse, CallResponse } from './types'
 
 export async function listCalls(params: CallListParams = {}): Promise<CallListResponse> {
@@ -45,6 +46,5 @@ export async function deleteCall(callId: string): Promise<void> {
 }
 
 export function getAudioStreamUrl(callId: string): string {
-  const base = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
-  return `${base}/api/v1/calls/${callId}/audio`
+  return `${API_BASE_URL}/api/v1/calls/${callId}/audio`
 }
