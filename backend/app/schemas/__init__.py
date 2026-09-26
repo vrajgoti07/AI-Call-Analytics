@@ -14,6 +14,11 @@ from backend.app.schemas.auth import (
     TokenResponse,
     UserResponse,
 )
+from backend.app.schemas.batch import (
+    BatchDetailResponse,
+    BatchListResponse,
+    BatchResponse,
+)
 from backend.app.schemas.call import (
     AudioFileResponse,
     BulkIngestResponse,
@@ -78,4 +83,7 @@ __all__ = [
     "ReportGenerateRequest",
     "ReportResponse",
     "ReportListResponse",
+    "BatchResponse",
+    "BatchDetailResponse",
+    "BatchListResponse",
 ]

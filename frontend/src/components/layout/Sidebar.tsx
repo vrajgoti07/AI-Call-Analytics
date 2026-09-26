@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Cpu,
   FileText,
+  FolderArchive,
   LayoutDashboard,
   PhoneCall,
   Search,
@@ -27,6 +28,7 @@ const navSections: Array<{ title: string; items: NavItem[] }> = [
     title: 'Main',
     items: [
       { name: 'Overview', to: '/overview', icon: LayoutDashboard },
+      { name: 'ZIP Batches', to: '/batches', icon: FolderArchive },
       { name: 'Calls', to: '/calls', icon: PhoneCall },
       { name: 'Semantic Search', to: '/search', icon: Search },
     ],

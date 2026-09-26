@@ -29,6 +29,10 @@ export interface CallCreate {
 
 export interface CallResponse {
   id: string
+  company_id?: string | null
+  batch_id?: string | null
+  batch_name?: string | null
+  batch_filename?: string | null
   external_id: string | null
   status: 'UPLOADED' | 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'PARTIAL' | 'FAILED' | string
   duration: number | null
@@ -55,15 +59,53 @@ export interface SkippedFileInfo {
 }
 
 export interface BulkIngestResponse {
+  batch_id?: string
+  batch_name?: string
   total_files: number
   processed_count: number
   created_calls: CallResponse[]
   skipped_files: SkippedFileInfo[]
 }
 
+export interface IngestionBatchResponse {
+  id: string
+  company_id: string
+  original_filename: string
+  display_name: string
+  upload_type: string
+  status: 'UPLOADING' | 'PROCESSING' | 'COMPLETED' | 'PARTIAL' | 'FAILED' | string
+  total_files: number
+  processed_count: number
+  skipped_count: number
+  failed_count: number
+  archive_size: number | null
+  file_hash: string | null
+  error_message: string | null
+  created_at: string
+  updated_at: string
+  completed_at: string | null
+}
+
+export interface IngestionBatchDetailResponse extends IngestionBatchResponse {
+  average_duration?: number | null
+}
+
+export interface BatchListResponse {
+  items: IngestionBatchResponse[]
+  pagination: PaginationMeta
+}
+
+export interface BatchListParams {
+  status?: string
+  search?: string
+  page?: number
+  page_size?: number
+}
+
 export interface ReportGenerateRequest {
-  report_type?: 'INDIVIDUAL_CALL' | 'COMPANY_ANALYTICS' | 'DATE_RANGE' | string
+  report_type?: 'INDIVIDUAL_CALL' | 'COMPANY_ANALYTICS' | 'BATCH_ANALYTICS' | 'DATE_RANGE' | string
   call_id?: string
+  batch_id?: string
   date_from?: string
   date_to?: string
   title?: string
@@ -72,6 +114,7 @@ export interface ReportGenerateRequest {
 export interface ReportResponse {
   id: string
   company_id: string
+  batch_id?: string | null
   call_id: string | null
   title: string
   report_type: string
@@ -94,12 +137,14 @@ export interface ReportListResponse {
 
 export interface ReportListParams {
   call_id?: string
+  batch_id?: string
   report_type?: string
   page?: number
   page_size?: number
 }
 
 export interface CallListParams {
+  batch_id?: string
   status?: string
   language?: string
   date_from?: string

@@ -108,6 +108,7 @@ def upload_zip(
     summary="List calls with filtering and pagination",
 )
 def list_calls(
+    batch_id: uuid.UUID | None = Query(default=None, description="Filter by batch UUID"),
     status_filter: str | None = Query(default=None, alias="status", description="Filter by status (e.g. UPLOADED, COMPLETED)"),
     language: str | None = Query(default=None, description="Filter by language code"),
     date_from: datetime | None = Query(default=None, description="Created on or after"),
@@ -121,6 +122,7 @@ def list_calls(
     calls, total, total_pages = CallRepository.list_calls(
         db=db,
         company_id=current_user.company_id,
+        batch_id=batch_id,
         status=status_filter,
         language=language,
         date_from=date_from,

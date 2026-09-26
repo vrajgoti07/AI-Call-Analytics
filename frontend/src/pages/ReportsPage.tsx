@@ -19,22 +19,30 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { TableSkeleton } from '../components/ui/LoadingSkeleton'
 import { useAuthStore } from '../stores/authStore'
 import { useDownloadReport, useGenerateReport, useReports } from '../hooks/useReports'
+import { useBatches } from '../hooks/useBatches'
 import { formatDateTime } from '../lib/utils'
+import { FileArchive } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 export function ReportsPage() {
   const { user } = useAuthStore()
   const [page, setPage] = useState(1)
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false)
   const [reportType, setReportType] = useState('COMPANY_ANALYTICS')
+  const [selectedBatchId, setSelectedBatchId] = useState('')
+  const [filterType, setFilterType] = useState('')
   const [customTitle, setCustomTitle] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
+  const { data: batchesData } = useBatches({ page: 1, page_size: 100 })
+
   const { data, isLoading, isError, error, refetch } = useReports({
     page,
     page_size: 15,
+    report_type: filterType || undefined,
   })
 
   const generateReportMutation = useGenerateReport()
@@ -47,12 +55,14 @@ export function ReportsPage() {
     try {
       await generateReportMutation.mutateAsync({
         report_type: reportType,
+        batch_id: reportType === 'BATCH_ANALYTICS' ? selectedBatchId : undefined,
         title: customTitle.trim() || undefined,
         date_from: dateFrom ? new Date(dateFrom).toISOString() : undefined,
         date_to: dateTo ? new Date(dateTo).toISOString() : undefined,
       })
       setIsGenerateModalOpen(false)
       setCustomTitle('')
+      setSelectedBatchId('')
       setDateFrom('')
       setDateTo('')
       refetch()
@@ -124,6 +134,32 @@ export function ReportsPage() {
         />
       )}
 
+      {/* Filter Bar */}
+      <div className="p-3.5 rounded-xl border border-[#E5E5E2] bg-white shadow-xs flex items-center justify-between text-xs">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-[#17181C]">Filter Scope:</span>
+          <select
+            value={filterType}
+            onChange={(e) => {
+              setFilterType(e.target.value)
+              setPage(1)
+            }}
+            className="rounded-lg border border-[#E5E5E2] bg-white px-2.5 py-1 text-xs text-[#17181C] focus:outline-none focus:border-[#6D5AE6] cursor-pointer"
+          >
+            <option value="">All Report Scopes</option>
+            <option value="COMPANY_ANALYTICS">Company Executive</option>
+            <option value="BATCH_ANALYTICS">ZIP Batch Analytics</option>
+            <option value="INDIVIDUAL_CALL">Individual Call</option>
+            <option value="DATE_RANGE">Date Range</option>
+          </select>
+        </div>
+        {pagination && (
+          <span className="text-[#8A8D95] font-mono text-[11px]">
+            Showing {reports.length} of {pagination.total} reports
+          </span>
+        )}
+      </div>
+
       {/* Loading state */}
       {isLoading && <TableSkeleton rows={6} cols={5} />}
 
@@ -153,6 +189,16 @@ export function ReportsPage() {
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-[#6D5AE6] shrink-0" />
                           <span className="truncate max-w-[280px]">{report.title}</span>
+                          {report.batch_id && (
+                            <Link
+                              to={`/batches/${report.batch_id}`}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#F2F0FD] text-[#5844D6] text-[10px] hover:bg-[#EAE6FC] font-medium"
+                              title="View parent batch folder"
+                            >
+                              <FileArchive className="h-3 w-3" />
+                              <span>Batch</span>
+                            </Link>
+                          )}
                         </div>
                       </td>
                       <td className="py-3.5 px-4 text-[#60636B]">
@@ -295,10 +341,32 @@ export function ReportsPage() {
               onChange={(e) => setReportType(e.target.value)}
               className="w-full rounded-lg border border-[#E5E5E2] bg-white px-3 py-2 text-xs text-[#17181C] focus:outline-none focus:border-[#6D5AE6] focus:ring-1 focus:ring-[#6D5AE6] cursor-pointer"
             >
-              <option value="COMPANY_ANALYTICS">Executive Summary & All Calls</option>
+              <option value="COMPANY_ANALYTICS">Executive Summary (All Workspace Calls)</option>
+              <option value="BATCH_ANALYTICS">ZIP Ingestion Batch Report</option>
               <option value="DATE_RANGE">Date-Range Filtered Analysis</option>
             </select>
           </div>
+
+          {reportType === 'BATCH_ANALYTICS' && (
+            <div>
+              <label className="block text-xs font-medium text-[#17181C] mb-1">
+                Select ZIP Batch <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={selectedBatchId}
+                onChange={(e) => setSelectedBatchId(e.target.value)}
+                required
+                className="w-full rounded-lg border border-[#E5E5E2] bg-white px-3 py-2 text-xs text-[#17181C] focus:outline-none focus:border-[#6D5AE6] focus:ring-1 focus:ring-[#6D5AE6] cursor-pointer"
+              >
+                <option value="">-- Choose an Ingestion Batch --</option>
+                {batchesData?.items.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.display_name} ({b.processed_count} calls)
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <Input
             label="Report Title (Optional)"

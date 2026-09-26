@@ -46,6 +46,7 @@ class ReportRepository:
         title: str,
         report_type: str = ReportType.COMPANY_ANALYTICS.value,
         call_id: uuid.UUID | None = None,
+        batch_id: uuid.UUID | None = None,
         user_id: uuid.UUID | None = None,
         date_from: datetime | None = None,
         date_to: datetime | None = None,
@@ -55,6 +56,7 @@ class ReportRepository:
         report = Report(
             company_id=company_id,
             call_id=call_id,
+            batch_id=batch_id,
             user_id=user_id,
             title=title,
             report_type=report_type,
@@ -117,6 +119,7 @@ class ReportRepository:
         db: Session,
         company_id: uuid.UUID,
         call_id: uuid.UUID | None = None,
+        batch_id: uuid.UUID | None = None,
         report_type: str | None = None,
         page: int = 1,
         page_size: int = 20,
@@ -128,6 +131,8 @@ class ReportRepository:
 
         if call_id is not None:
             base_query = base_query.where(Report.call_id == call_id)
+        if batch_id is not None:
+            base_query = base_query.where(Report.batch_id == batch_id)
         if report_type:
             base_query = base_query.where(Report.report_type == report_type)
 
@@ -155,6 +160,26 @@ class ReportRepository:
         stmt = (
             select(Report)
             .where(Report.call_id == call_id)
+            .order_by(desc(Report.created_at))
+            .limit(1)
+        )
+        if company_id is not None:
+            stmt = stmt.where(Report.company_id == company_id)
+        return db.scalar(stmt)
+
+    @staticmethod
+    def get_latest_for_batch(
+        db: Session,
+        batch_id: uuid.UUID,
+        company_id: uuid.UUID | None = None,
+    ) -> Report | None:
+        """Get latest batch analytics report for a batch."""
+        stmt = (
+            select(Report)
+            .where(
+                Report.batch_id == batch_id,
+                Report.report_type == ReportType.BATCH_ANALYTICS.value,
+            )
             .order_by(desc(Report.created_at))
             .limit(1)
         )

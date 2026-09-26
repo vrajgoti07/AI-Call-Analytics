@@ -41,6 +41,9 @@ class CallResponse(BaseModel):
 
     id: uuid.UUID
     company_id: uuid.UUID | None = None
+    batch_id: uuid.UUID | None = None
+    batch_name: str | None = None
+    batch_filename: str | None = None
     external_id: str | None = None
     status: str
     duration: float | None = None
@@ -75,8 +78,22 @@ class SkippedFileInfo(BaseModel):
 class BulkIngestResponse(BaseModel):
     """Result summary of a bulk ZIP or multi-file call upload."""
 
+    batch_id: uuid.UUID | None = None
+    batch_name: str | None = None
     total_files: int
     processed_count: int
     skipped_count: int = 0
     created_calls: list[CallResponse]
     skipped_files: list[SkippedFileInfo]
+
+
+class CallListParams(BaseModel):
+    """Query parameters for listing calls."""
+
+    batch_id: uuid.UUID | None = None
+    status: str | None = None
+    language: str | None = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
+    page: int = 1
+    page_size: int = 20

@@ -7,6 +7,8 @@ Implements safe, multi-tenant ZIP extraction, security guards:
 3. Supported audio format validation
 4. SHA-256 duplicate detection per company workspace
 5. Automated background pipeline dispatching
+6. IngestionBatch creation for ZIP-wise call management
+7. Real audio duration extraction
 """
 
 from __future__ import annotations
@@ -17,7 +19,9 @@ import logging
 import mimetypes
 import os
 import re
+import struct
 import uuid
+import wave
 import zipfile
 from pathlib import Path
 from typing import Any
@@ -29,6 +33,8 @@ from sqlalchemy.orm import Session
 from backend.app.core.config import settings
 from backend.app.core.exceptions import AppException
 from backend.app.models.call import AudioFile, Call, CallStatus
+from backend.app.models.ingestion_batch import BatchStatus, BatchUploadType, IngestionBatch
+from backend.app.repositories.batch_repository import BatchRepository
 from backend.app.repositories.call_repository import CallRepository
 from backend.app.schemas.call import BulkIngestResponse, CallResponse, SkippedFileInfo
 from backend.app.services.call_service import CallService
@@ -49,6 +55,37 @@ def _safe_stem(filename: str) -> str:
     return cleaned[:100] or f"call-{uuid.uuid4().hex[:8]}"
 
 
+def _extract_audio_duration(content: bytes, filename: str) -> float | None:
+    """
+    Extract real audio duration from audio file bytes.
+    Supports WAV (via wave module) and estimates for other formats via file size.
+    Returns duration in seconds, or None if extraction fails.
+    """
+    ext = Path(filename).suffix.lower()
+    try:
+        if ext == ".wav":
+            buf = io.BytesIO(content)
+            with wave.open(buf, "rb") as wf:
+                frames = wf.getnframes()
+                rate = wf.getframerate()
+                if rate > 0:
+                    return round(frames / rate, 3)
+        # Try mutagen for MP3/FLAC/OGG/M4A if available
+        try:
+            import mutagen
+            buf = io.BytesIO(content)
+            audio_meta = mutagen.File(buf, filename=filename)
+            if audio_meta is not None and audio_meta.info and hasattr(audio_meta.info, "length"):
+                return round(audio_meta.info.length, 3)
+        except ImportError:
+            pass
+        except Exception:
+            pass
+    except Exception as e:
+        logger.warning("Failed to extract audio duration from %s: %s", filename, e)
+    return None
+
+
 class BulkUploadService:
     """Service orchestrating secure ZIP call ingestion and duplicate detection."""
 
@@ -63,6 +100,7 @@ class BulkUploadService:
         """
         Validate, extract, deduplicate, and ingest audio files from a ZIP archive
         scoped strictly to the specified company workspace.
+        Creates an IngestionBatch to group all calls from this ZIP.
         """
         filename = zip_file.filename or "calls.zip"
         if not filename.lower().endswith(".zip"):
@@ -129,6 +167,21 @@ class BulkUploadService:
                     message="Abnormally high compression ratio detected (potential zip bomb).",
                     status_code=400,
                 )
+
+        # Create IngestionBatch BEFORE processing any files
+        zip_display_name = Path(filename).stem
+        batch = BatchRepository.create_batch(
+            db=db,
+            company_id=company_id,
+            original_filename=filename,
+            display_name=zip_display_name,
+            upload_type=BatchUploadType.ZIP.value,
+            archive_size=total_zip_size,
+        )
+        logger.info("Created IngestionBatch %s for ZIP '%s' (company %s)", batch.id, filename, company_id)
+
+        # Update batch status to PROCESSING
+        BatchRepository.update_status(db, batch.id, BatchStatus.PROCESSING.value)
 
         # Destination directory for this company's calls
         company_upload_dir = Path(settings.storage_local_dir) / f"company_{company_id}"
@@ -226,23 +279,32 @@ class BulkUploadService:
                 )
                 continue
 
+            # Extract real audio duration
+            audio_duration = _extract_audio_duration(content, base_name)
+            if audio_duration is not None:
+                logger.info("Extracted real duration for %s: %.3f seconds", base_name, audio_duration)
+            else:
+                logger.warning("AUDIO_DURATION_UNAVAILABLE: Could not extract duration from %s", base_name)
+
             # Guess mime-type
             mime_type, _ = mimetypes.guess_type(base_name)
             mime_type = mime_type or "audio/wav"
 
-            # Persist Call
+            # Persist Call with batch_id
             external_id = _safe_stem(base_name)
             call = Call(
                 id=call_id,
                 company_id=company_id,
+                batch_id=batch.id,
                 external_id=external_id,
                 status=CallStatus.UPLOADED.value,
+                duration=audio_duration,
                 language="en",
             )
             db.add(call)
             db.flush()
 
-            # Persist AudioFile
+            # Persist AudioFile with real duration
             audio_record = AudioFile(
                 id=uuid.uuid4(),
                 call_id=call_id,
@@ -250,6 +312,7 @@ class BulkUploadService:
                 storage_key=str(destination),
                 mime_type=mime_type,
                 size=len(content),
+                duration=audio_duration,
                 file_hash=file_hash,
                 audio_data=content,
                 sample_rate=settings.audio_sample_rate,
@@ -271,7 +334,37 @@ class BulkUploadService:
 
         db.commit()
 
+        # Update batch counters and determine final status
+        failed_count = total_valid_entries - len(created_calls) - len(skipped_files)
+        if failed_count < 0:
+            failed_count = 0
+
+        BatchRepository.update_counters(
+            db=db,
+            batch_id=batch.id,
+            total_files=total_valid_entries,
+            processed_count=len(created_calls),
+            skipped_count=len(skipped_files),
+            failed_count=failed_count,
+        )
+
+        # Determine batch status based on results
+        if len(created_calls) == 0:
+            if total_valid_entries == 0:
+                batch_status = BatchStatus.COMPLETED.value  # No audio files in ZIP
+            else:
+                batch_status = BatchStatus.FAILED.value
+        elif len(skipped_files) > 0 or failed_count > 0:
+            # Some calls were created, some skipped - mark as PROCESSING (analysis still running)
+            batch_status = BatchStatus.PROCESSING.value
+        else:
+            batch_status = BatchStatus.PROCESSING.value  # All calls created, analysis running
+
+        BatchRepository.update_status(db, batch.id, batch_status)
+
         return BulkIngestResponse(
+            batch_id=batch.id,
+            batch_name=batch.display_name,
             total_files=total_valid_entries,
             processed_count=len(created_calls),
             skipped_count=len(skipped_files),

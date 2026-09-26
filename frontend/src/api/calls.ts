@@ -15,6 +15,7 @@ import type {
 
 export async function listCalls(params: CallListParams = {}): Promise<CallListResponse> {
   const queryParams: Record<string, string | number | undefined> = {
+    batch_id: params.batch_id,
     page: params.page ?? 1,
     page_size: params.page_size ?? 20,
     status: params.status,

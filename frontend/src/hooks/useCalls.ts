@@ -45,6 +45,7 @@ export function useUploadZip() {
       uploadZip(file, autoAnalyze),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CALLS_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: ['batches'] })
       queryClient.invalidateQueries({ queryKey: ['jobs'] })
     },
   })

@@ -5,6 +5,7 @@ AI Call Analytics — Report ORM Model for Multi-Tenant Reports.
 from __future__ import annotations
 
 import enum
+import os
 import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
@@ -39,6 +40,7 @@ class ReportType(str, enum.Enum):
 
     INDIVIDUAL_CALL = "INDIVIDUAL_CALL"
     COMPANY_ANALYTICS = "COMPANY_ANALYTICS"
+    BATCH_ANALYTICS = "BATCH_ANALYTICS"
     DATE_RANGE = "DATE_RANGE"
 
 
@@ -73,6 +75,12 @@ class Report(Base):
     call_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("calls.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    batch_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ingestion_batches.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
@@ -126,9 +134,26 @@ class Report(Base):
     call: Mapped[Call | None] = relationship("Call")
     user: Mapped[User | None] = relationship("User")
 
+    @property
+    def has_pdf(self) -> bool:
+        """Check if PDF artifact exists on disk or in database."""
+        return bool((self.file_path_pdf and os.path.exists(self.file_path_pdf)) or self.pdf_data)
+
+    @property
+    def has_json(self) -> bool:
+        """Check if JSON artifact exists on disk."""
+        return bool(self.file_path_json and os.path.exists(self.file_path_json))
+
+    @property
+    def has_csv(self) -> bool:
+        """Check if CSV artifact exists on disk."""
+        return bool(self.file_path_csv and os.path.exists(self.file_path_csv))
+
     __table_args__ = (
         Index("ix_reports_company_created_at", "company_id", "created_at"),
         Index("ix_reports_company_status", "company_id", "status"),
+        Index("ix_reports_batch", "batch_id"),
+        Index("ix_reports_company_batch", "company_id", "batch_id"),
     )
 
     def __repr__(self) -> str:

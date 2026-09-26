@@ -22,6 +22,7 @@ import { ErrorAlert } from '../components/ui/ErrorAlert'
 import { EmptyState } from '../components/ui/EmptyState'
 import { TableSkeleton } from '../components/ui/LoadingSkeleton'
 import { useCalls, useCreateCall, useDeleteCall, useUploadAudio, useUploadZip } from '../hooks/useCalls'
+import { useBatches } from '../hooks/useBatches'
 import { useStartAnalysis } from '../hooks/useAnalysis'
 import { useAuthStore } from '../stores/authStore'
 import type { BulkIngestResponse } from '../api/types'
@@ -31,6 +32,7 @@ export function CallsPage() {
   const { user } = useAuthStore()
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [selectedBatchId, setSelectedBatchId] = useState<string>('')
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [externalId, setExternalId] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -38,10 +40,13 @@ export function CallsPage() {
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [zipResult, setZipResult] = useState<BulkIngestResponse | null>(null)
 
+  const { data: batchesData } = useBatches({ page: 1, page_size: 100 })
+
   const { data, isLoading, isError, error, refetch } = useCalls({
     page,
     page_size: 15,
     status: statusFilter || undefined,
+    batch_id: selectedBatchId || undefined,
   })
 
   const createCallMutation = useCreateCall()
@@ -155,28 +160,61 @@ export function CallsPage() {
 
       {/* Filter Bar */}
       <div className="p-4 rounded-xl border border-[#E5E5E2] bg-white shadow-xs flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-[#60636B]" />
-          <span className="text-xs font-semibold text-[#17181C]">
-            Filter Status:
-          </span>
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value)
-              setPage(1)
-            }}
-            aria-label="Filter calls by status"
-            className="rounded-lg border border-[#E5E5E2] bg-white px-3 py-1.5 text-xs text-[#17181C] focus:outline-none focus:border-[#6D5AE6] focus:ring-1 focus:ring-[#6D5AE6] cursor-pointer"
-          >
-            <option value="">All Statuses</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="PROCESSING">Processing</option>
-            <option value="PARTIAL">Partial</option>
-            <option value="UPLOADED">Uploaded</option>
-            <option value="QUEUED">Queued</option>
-            <option value="FAILED">Failed</option>
-          </select>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-[#60636B]" />
+            <span className="text-xs font-semibold text-[#17181C]">
+              Filter Status:
+            </span>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value)
+                setPage(1)
+              }}
+              aria-label="Filter calls by status"
+              className="rounded-lg border border-[#E5E5E2] bg-white px-3 py-1.5 text-xs text-[#17181C] focus:outline-none focus:border-[#6D5AE6] focus:ring-1 focus:ring-[#6D5AE6] cursor-pointer"
+            >
+              <option value="">All Statuses</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="PROCESSING">Processing</option>
+              <option value="PARTIAL">Partial</option>
+              <option value="UPLOADED">Uploaded</option>
+              <option value="QUEUED">Queued</option>
+              <option value="FAILED">Failed</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <FileArchive className="h-4 w-4 text-[#6D5AE6]" />
+            <span className="text-xs font-semibold text-[#17181C]">
+              ZIP Batch:
+            </span>
+            <select
+              value={selectedBatchId}
+              onChange={(e) => {
+                setSelectedBatchId(e.target.value)
+                setPage(1)
+              }}
+              aria-label="Filter calls by batch"
+              className="rounded-lg border border-[#E5E5E2] bg-white px-3 py-1.5 text-xs text-[#17181C] focus:outline-none focus:border-[#6D5AE6] focus:ring-1 focus:ring-[#6D5AE6] cursor-pointer max-w-[220px] truncate"
+            >
+              <option value="">All Batches (Global)</option>
+              {batchesData?.items.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.display_name} ({b.processed_count} calls)
+                </option>
+              ))}
+            </select>
+            {selectedBatchId && (
+              <button
+                onClick={() => setSelectedBatchId('')}
+                className="text-[11px] text-[#6D5AE6] hover:underline"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
         {pagination && (
@@ -208,6 +246,7 @@ export function CallsPage() {
               <thead className="border-b border-[#E5E5E2] bg-[#FAFAF9] text-[#60636B] text-[11px] font-semibold">
                 <tr>
                   <th className="py-3 px-4">Call ID</th>
+                  <th className="py-3 px-4">Batch / Folder</th>
                   <th className="py-3 px-4">Audio Filename</th>
                   <th className="py-3 px-4">Duration</th>
                   <th className="py-3 px-4">Language</th>
@@ -223,6 +262,20 @@ export function CallsPage() {
                       <Link to={`/calls/${call.id}`} className="hover:underline">
                         {call.external_id || call.id.slice(0, 8)}
                       </Link>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      {call.batch_id ? (
+                        <Link
+                          to={`/batches/${call.batch_id}`}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F2F0FD] border border-[#DDD6FE] text-[#5844D6] text-[11px] font-medium hover:bg-[#EAE6FC] truncate max-w-[150px]"
+                          title={call.batch_name || call.batch_filename || 'Batch'}
+                        >
+                          <FileArchive className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{call.batch_name || call.batch_filename || 'Batch'}</span>
+                        </Link>
+                      ) : (
+                        <span className="text-[#8A8D95] text-[11px]">Direct Upload</span>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 text-[#17181C]">
                       {call.audio_file ? (
@@ -466,10 +519,17 @@ export function CallsPage() {
               </div>
             )}
 
-            <div className="flex justify-end pt-3 border-t border-[#E5E5E2]">
-              <Button size="sm" onClick={() => setZipResult(null)}>
-                Done
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-[#E5E5E2]">
+              <Button variant="outline" size="sm" onClick={() => setZipResult(null)}>
+                Close
               </Button>
+              {zipResult.batch_id && (
+                <Link to={`/batches/${zipResult.batch_id}`} onClick={() => setZipResult(null)}>
+                  <Button size="sm" rightIcon={<ArrowRight className="h-3 w-3" />}>
+                    Open ZIP Batch
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </Modal>

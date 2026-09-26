@@ -37,6 +37,7 @@ def _to_report_response(r) -> ReportResponse:
     return ReportResponse(
         id=r.id,
         company_id=r.company_id,
+        batch_id=getattr(r, "batch_id", None),
         call_id=r.call_id,
         title=r.title,
         report_type=r.report_type,
@@ -140,6 +141,7 @@ def download_report(
 )
 def list_reports(
     call_id: uuid.UUID | None = Query(default=None, description="Optional filter by Call ID"),
+    batch_id: uuid.UUID | None = Query(default=None, description="Optional filter by Batch ID"),
     report_type: str | None = Query(default=None, description="Filter by report type"),
     page: int = Query(default=1, ge=1, description="Page number"),
     page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
@@ -151,6 +153,7 @@ def list_reports(
         db=db,
         company_id=current_user.company_id,
         call_id=call_id,
+        batch_id=batch_id,
         report_type=report_type,
         page=page,
         page_size=page_size,

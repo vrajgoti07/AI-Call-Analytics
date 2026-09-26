@@ -17,11 +17,15 @@ class ReportGenerateRequest(BaseModel):
 
     report_type: str = Field(
         default="COMPANY_ANALYTICS",
-        description="Type of report: 'COMPANY_ANALYTICS', 'INDIVIDUAL_CALL', or 'DATE_RANGE'",
+        description="Type of report: 'COMPANY_ANALYTICS', 'INDIVIDUAL_CALL', 'BATCH_ANALYTICS', or 'DATE_RANGE'",
     )
     call_id: uuid.UUID | None = Field(
         default=None,
         description="Specific Call UUID when generating an INDIVIDUAL_CALL report",
+    )
+    batch_id: uuid.UUID | None = Field(
+        default=None,
+        description="Specific Batch UUID when generating a BATCH_ANALYTICS report",
     )
     date_from: datetime | None = Field(
         default=None,
@@ -46,6 +50,7 @@ class ReportResponse(BaseModel):
     id: uuid.UUID
     company_id: uuid.UUID
     call_id: uuid.UUID | None = None
+    batch_id: uuid.UUID | None = None
     title: str
     report_type: str
     status: str
@@ -65,3 +70,13 @@ class ReportListResponse(BaseModel):
 
     items: list[ReportResponse]
     pagination: PaginationMeta
+
+
+class ReportListParams(BaseModel):
+    """Query parameters for listing reports."""
+
+    call_id: uuid.UUID | None = None
+    batch_id: uuid.UUID | None = None
+    report_type: str | None = None
+    page: int = 1
+    page_size: int = 20

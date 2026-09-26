@@ -46,6 +46,7 @@ from backend.app.models.company import Company
 from backend.app.models.escalation import EscalationRisk
 from backend.app.models.report import Report, ReportStatus, ReportType
 from backend.app.models.transcript import Transcript
+from backend.app.repositories.batch_repository import BatchRepository
 from backend.app.repositories.call_repository import CallRepository
 from backend.app.repositories.company_repository import CompanyRepository
 from backend.app.repositories.report_repository import ReportRepository
@@ -100,6 +101,15 @@ class ReportService:
                 company=company,
                 user_id=user_id,
                 call_id=req.call_id,
+                custom_title=req.title,
+                output_dir=base_dir,
+            )
+        elif req.report_type == ReportType.BATCH_ANALYTICS.value or req.batch_id is not None:
+            return cls._generate_batch_analytics_report(
+                db=db,
+                company=company,
+                user_id=user_id,
+                batch_id=req.batch_id,
                 custom_title=req.title,
                 output_dir=base_dir,
             )
@@ -494,6 +504,156 @@ class ReportService:
             ReportRepository.update_report_failed(db, report.id, str(exc))
             raise
 
+    @classmethod
+    def _generate_batch_analytics_report(
+        cls,
+        db: Session,
+        company: Company,
+        user_id: uuid.UUID | None,
+        batch_id: uuid.UUID | None,
+        custom_title: str | None,
+        output_dir: Path,
+    ) -> Report:
+        """Generate comprehensive batch analytics report for a specific ZIP upload."""
+        if not batch_id:
+            raise AppException("INVALID_REQUEST", "batch_id is required for BATCH_ANALYTICS report generation.", 400)
+
+        batch = BatchRepository.get_by_id(db, batch_id, company_id=company.id)
+        if not batch:
+            raise AppException("BATCH_NOT_FOUND", f"Batch {batch_id} not found.", 404)
+
+        title = custom_title or f"Batch Report — {batch.display_name or batch.original_filename}"
+
+        report = ReportRepository.create_report(
+            db=db,
+            company_id=company.id,
+            batch_id=batch.id,
+            user_id=user_id,
+            title=title,
+            report_type=ReportType.BATCH_ANALYTICS.value,
+            status=ReportStatus.GENERATING.value,
+        )
+
+        try:
+            # Query calls for this batch
+            query = (
+                select(Call)
+                .where(Call.company_id == company.id, Call.batch_id == batch.id)
+                .order_by(desc(Call.created_at))
+            )
+            calls = list(db.scalars(query).all())
+            total_calls = len(calls)
+
+            # Aggregations
+            status_counts: dict[str, int] = {}
+            durations: list[float] = []
+
+            for c in calls:
+                status_counts[c.status] = status_counts.get(c.status, 0) + 1
+                if c.duration:
+                    durations.append(c.duration)
+
+            avg_duration = sum(durations) / len(durations) if durations else 0.0
+            total_duration = sum(durations) if durations else 0.0
+
+            # Query risks for these calls
+            call_id_strs = [str(c.id) for c in calls]
+            risk_counts: dict[str, int] = {"LOW": 0, "MEDIUM": 0, "HIGH": 0, "CRITICAL": 0}
+            risk_scores: list[float] = []
+
+            if call_id_strs:
+                risks_stmt = (
+                    select(EscalationRisk)
+                    .where(EscalationRisk.call_id.in_(call_id_strs))
+                )
+                for r in db.scalars(risks_stmt).all():
+                    lvl = (r.risk_level or "LOW").upper()
+                    risk_counts[lvl] = risk_counts.get(lvl, 0) + 1
+                    risk_scores.append(r.risk_score)
+
+            avg_risk_score = sum(risk_scores) / len(risk_scores) if risk_scores else 0.0
+
+            summary_data: dict[str, Any] = {
+                "report_id": str(report.id),
+                "company_id": str(company.id),
+                "company_name": company.name,
+                "batch_id": str(batch.id),
+                "batch_name": batch.display_name,
+                "original_filename": batch.original_filename,
+                "batch_status": batch.status,
+                "total_calls": total_calls,
+                "status_distribution": status_counts,
+                "completed_count": status_counts.get(CallStatus.COMPLETED.value, 0),
+                "processing_count": status_counts.get(CallStatus.PROCESSING.value, 0),
+                "failed_count": status_counts.get(CallStatus.FAILED.value, 0),
+                "uploaded_count": status_counts.get(CallStatus.UPLOADED.value, 0),
+                "average_duration_seconds": round(avg_duration, 1),
+                "total_duration_seconds": round(total_duration, 1),
+                "risk_distribution": risk_counts,
+                "average_risk_score": round(avg_risk_score, 2),
+                "calls_sample": [
+                    {
+                        "call_id": str(c.id),
+                        "external_id": c.external_id,
+                        "status": c.status,
+                        "duration": c.duration,
+                        "language": c.language,
+                        "created_at": c.created_at.isoformat(),
+                    }
+                    for c in calls
+                ],
+            }
+
+            prefix = f"batch_{str(batch.id)[:8]}_{str(report.id)[:8]}"
+            pdf_path = output_dir / f"{prefix}.pdf"
+            json_path = output_dir / f"{prefix}.json"
+            csv_path = output_dir / f"{prefix}.csv"
+
+            # 1. Write JSON
+            with open(json_path, "w", encoding="utf-8") as f:
+                json.dump(summary_data, f, indent=2)
+
+            # 2. Write CSV
+            with open(csv_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(["Call ID", "External ID", "Status", "Duration (s)", "Language", "Created At"])
+                for c in calls:
+                    writer.writerow([
+                        str(c.id),
+                        c.external_id or "",
+                        c.status,
+                        f"{c.duration:.1f}" if c.duration else "",
+                        c.language or "en",
+                        c.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                    ])
+
+            # 3. Write PDF
+            cls._render_batch_pdf(
+                output_path=pdf_path,
+                company=company,
+                batch=batch,
+                summary=summary_data,
+                calls=calls,
+            )
+
+            pdf_bytes = pdf_path.read_bytes() if pdf_path.exists() else None
+
+            updated_report = ReportRepository.update_report_completed(
+                db=db,
+                report_id=report.id,
+                file_path_pdf=str(pdf_path),
+                file_path_json=str(json_path),
+                file_path_csv=str(csv_path),
+                summary_data=summary_data,
+                pdf_data=pdf_bytes,
+            )
+            return updated_report or report
+
+        except Exception as exc:
+            logger.exception("Failed to generate batch analytics report %s: %s", report.id, exc)
+            ReportRepository.update_report_failed(db, report.id, str(exc))
+            raise
+
     # --------------------------------------------------------------------------
     # PDF Renderers using ReportLab
     # --------------------------------------------------------------------------
@@ -862,6 +1022,181 @@ class ReportService:
             story.append(inv_table)
         else:
             story.append(Paragraph("No calls found for this company.", body_style))
+
+        doc.build(story)
+
+    @classmethod
+    def _render_batch_pdf(
+        cls,
+        output_path: Path,
+        company: Company,
+        batch: Any,
+        summary: dict[str, Any],
+        calls: list[Call],
+    ) -> None:
+        """Render a styled PDF report for a batch upload."""
+        doc = SimpleDocTemplate(
+            str(output_path),
+            pagesize=letter,
+            rightMargin=40,
+            leftMargin=40,
+            topMargin=40,
+            bottomMargin=40,
+        )
+
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            "DocTitle",
+            parent=styles["Heading1"],
+            fontSize=18,
+            leading=22,
+            textColor=colors.HexColor("#1E1B4B"),
+            spaceAfter=4,
+        )
+        subtitle_style = ParagraphStyle(
+            "DocSubTitle",
+            parent=styles["Normal"],
+            fontSize=10,
+            leading=14,
+            textColor=colors.HexColor("#6B7280"),
+            spaceAfter=15,
+        )
+        section_style = ParagraphStyle(
+            "DocSection",
+            parent=styles["Heading2"],
+            fontSize=12,
+            leading=16,
+            textColor=colors.HexColor("#4338CA"),
+            spaceBefore=12,
+            spaceAfter=6,
+        )
+        body_style = ParagraphStyle(
+            "DocBody",
+            parent=styles["Normal"],
+            fontSize=9,
+            leading=13,
+            textColor=colors.HexColor("#1F2937"),
+        )
+        bold_label = ParagraphStyle(
+            "DocLabel",
+            parent=body_style,
+            fontName="Helvetica-Bold",
+            textColor=colors.white,
+        )
+
+        story = []
+
+        # Header
+        story.append(Paragraph(f"BATCH ANALYTICS REPORT — {batch.display_name}", title_style))
+        story.append(
+            Paragraph(
+                f"Workspace: <b>{company.name}</b> &nbsp;|&nbsp; File: <b>{batch.original_filename}</b> &nbsp;|&nbsp; Status: <b>{batch.status}</b> &nbsp;|&nbsp; Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
+                subtitle_style,
+            )
+        )
+        story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor("#6D5AE6"), spaceAfter=15))
+
+        # KPI Metrics Table
+        kpi_data = [
+            [
+                Paragraph("<b>Total Batch Calls</b>", body_style),
+                Paragraph(str(summary["total_calls"]), body_style),
+                Paragraph("<b>Completed Calls</b>", body_style),
+                Paragraph(str(summary["completed_count"]), body_style),
+            ],
+            [
+                Paragraph("<b>Processing / Queued</b>", body_style),
+                Paragraph(str(summary["processing_count"] + summary.get("uploaded_count", 0)), body_style),
+                Paragraph("<b>Failed Ingestion</b>", body_style),
+                Paragraph(str(summary["failed_count"]), body_style),
+            ],
+            [
+                Paragraph("<b>Average Duration</b>", body_style),
+                Paragraph(_format_seconds(summary["average_duration_seconds"]), body_style),
+                Paragraph("<b>Avg Risk Score</b>", body_style),
+                Paragraph(f"{summary['average_risk_score']:.1f} / 100", body_style),
+            ],
+        ]
+        kpi_table = Table(kpi_data, colWidths=[1.5 * inch, 1.7 * inch, 1.5 * inch, 2.3 * inch])
+        kpi_table.setStyle(
+            TableStyle([
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F3F4F6")),
+                ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
+                ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#E5E7EB")),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ])
+        )
+        story.append(kpi_table)
+        story.append(Spacer(1, 15))
+
+        # Risk Classification Overview
+        story.append(Paragraph("Escalation Risk Distribution", section_style))
+        risk_dist = summary.get("risk_distribution", {})
+        risk_table_data = [
+            [
+                Paragraph("<b>Risk Tier</b>", body_style),
+                Paragraph("<b>Low Risk</b>", body_style),
+                Paragraph("<b>Medium Risk</b>", body_style),
+                Paragraph("<b>High Risk</b>", body_style),
+                Paragraph("<b>Critical Risk</b>", body_style),
+            ],
+            [
+                Paragraph("<b>Volume</b>", body_style),
+                Paragraph(str(risk_dist.get("LOW", 0)), body_style),
+                Paragraph(str(risk_dist.get("MEDIUM", 0)), body_style),
+                Paragraph(str(risk_dist.get("HIGH", 0)), body_style),
+                Paragraph(str(risk_dist.get("CRITICAL", 0)), body_style),
+            ],
+        ]
+        r_table = Table(risk_table_data, colWidths=[1.4 * inch, 1.4 * inch, 1.4 * inch, 1.4 * inch, 1.4 * inch])
+        r_table.setStyle(
+            TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E0E7FF")),
+                ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#C7D2FE")),
+                ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#E0E7FF")),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ])
+        )
+        story.append(r_table)
+        story.append(Spacer(1, 15))
+
+        # Call Inventory Table
+        story.append(Paragraph(f"Batch Call Inventory ({len(calls)} Calls)", section_style))
+        if calls:
+            inv_rows = [
+                [
+                    Paragraph("<b>Call ID</b>", bold_label),
+                    Paragraph("<b>External Ref / Audio</b>", bold_label),
+                    Paragraph("<b>Status</b>", bold_label),
+                    Paragraph("<b>Duration</b>", bold_label),
+                    Paragraph("<b>Created Date</b>", bold_label),
+                ]
+            ]
+            for c in calls[:100]:
+                inv_rows.append([
+                    Paragraph(str(c.id)[:10] + "...", body_style),
+                    Paragraph(c.external_id or "-", body_style),
+                    Paragraph(c.status, body_style),
+                    Paragraph(_format_seconds(c.duration), body_style),
+                    Paragraph(c.created_at.strftime("%Y-%m-%d %H:%M"), body_style),
+                ])
+
+            inv_table = Table(inv_rows, colWidths=[1.5 * inch, 1.7 * inch, 1.0 * inch, 1.0 * inch, 1.8 * inch])
+            inv_table.setStyle(
+                TableStyle([
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4338CA")),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F9FAFB")]),
+                    ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#E5E7EB")),
+                    ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#E5E7EB")),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ])
+            )
+            story.append(inv_table)
+        else:
+            story.append(Paragraph("No calls found in this batch.", body_style))
 
         doc.build(story)
 

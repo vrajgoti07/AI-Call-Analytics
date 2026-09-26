@@ -25,7 +25,11 @@ class CallRepository:
         """Retrieve a Call by its primary key with audio_file and transcript loaded, optionally filtered by company."""
         stmt = (
             select(Call)
-            .options(joinedload(Call.audio_file), joinedload(Call.transcript))
+            .options(
+                joinedload(Call.audio_file),
+                joinedload(Call.transcript),
+                joinedload(Call.batch),
+            )
             .where(Call.id == call_id)
         )
         if company_id is not None:
@@ -36,6 +40,7 @@ class CallRepository:
     def list_calls(
         db: Session,
         company_id: uuid.UUID | None = None,
+        batch_id: uuid.UUID | None = None,
         status: str | None = None,
         language: str | None = None,
         date_from: datetime | None = None,
@@ -49,10 +54,15 @@ class CallRepository:
         Returns:
             Tuple of (calls_list, total_count, total_pages)
         """
-        base_query = select(Call).options(joinedload(Call.audio_file))
+        base_query = select(Call).options(
+            joinedload(Call.audio_file),
+            joinedload(Call.batch),
+        )
 
         if company_id is not None:
             base_query = base_query.where(Call.company_id == company_id)
+        if batch_id is not None:
+            base_query = base_query.where(Call.batch_id == batch_id)
         if status:
             base_query = base_query.where(Call.status == status)
         if language:
@@ -82,13 +92,15 @@ class CallRepository:
     def create_call(
         db: Session,
         company_id: uuid.UUID | None = None,
+        batch_id: uuid.UUID | None = None,
         external_id: str | None = None,
         language: str | None = "en",
         status: str = CallStatus.UPLOADED.value,
     ) -> Call:
-        """Create and persist a new Call record associated with a company."""
+        """Create and persist a new Call record associated with a company and optionally a batch."""
         call = Call(
             company_id=company_id,
+            batch_id=batch_id,
             external_id=external_id,
             language=language,
             status=status,

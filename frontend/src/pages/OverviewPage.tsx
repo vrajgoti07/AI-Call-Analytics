@@ -2,6 +2,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock,
+  FileArchive,
   PhoneCall,
   Sparkles,
 } from 'lucide-react'
@@ -81,6 +82,11 @@ export function OverviewPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link to="/batches">
+            <Button variant="outline" size="sm" leftIcon={<FileArchive className="h-3.5 w-3.5" />}>
+              ZIP Batches
+            </Button>
+          </Link>
           <Link to="/calls">
             <Button size="sm" leftIcon={<PhoneCall className="h-3.5 w-3.5" />}>
               Ingest Audio Call

@@ -85,7 +85,9 @@ def analyze_call_task(
         audio_file = call.audio_file
         audio_path = audio_file.storage_key if audio_file else None
 
-        duration = 15.0
+        # Use real stored duration from audio metadata extraction (set during upload)
+        duration = call.duration or (audio_file.duration if audio_file else None)
+
         if audio_path and os.path.exists(audio_path):
             try:
                 from ai_service.audio.config import AudioConfig
@@ -98,6 +100,40 @@ def analyze_call_task(
             except Exception as e:
                 logger.warning("Audio preprocessor note on %s: %s", audio_path, e)
 
+        # Extract duration from audio file directly if still unavailable
+        if duration is None and audio_path and os.path.exists(audio_path):
+            try:
+                import wave
+                with wave.open(audio_path, "rb") as wf:
+                    frames = wf.getnframes()
+                    rate = wf.getframerate()
+                    if rate > 0:
+                        duration = round(frames / rate, 3)
+                        logger.info("WAV header duration extracted: %.3fs", duration)
+            except Exception:
+                pass
+            if duration is None:
+                try:
+                    import mutagen
+                    audio_meta = mutagen.File(audio_path)
+                    if audio_meta and audio_meta.info and hasattr(audio_meta.info, "length"):
+                        duration = round(audio_meta.info.length, 3)
+                        logger.info("Mutagen duration extracted: %.3fs", duration)
+                except ImportError:
+                    pass
+                except Exception:
+                    pass
+
+        if duration is None:
+            logger.error("AUDIO_DURATION_UNAVAILABLE: Could not determine duration for call %s", call_id)
+
+        # Update Call and AudioFile with real duration
+        if duration is not None:
+            call.duration = duration
+            if audio_file:
+                audio_file.duration = duration
+            db.commit()
+
         JobRepository.update_stage(db, job_id, "preprocessing", "COMPLETED", 15)
 
         # -------------------------------------------------------------
@@ -105,7 +141,7 @@ def analyze_call_task(
         # -------------------------------------------------------------
         JobRepository.update_stage(db, job_id, "transcription", "PROCESSING", 25)
 
-        transcript_text = "Hello, thank you for calling customer service. How can I help you today? I have an issue with my card."
+        transcript_text = ""
         language = call.language or "en"
         raw_segments = []
 
@@ -123,10 +159,14 @@ def analyze_call_task(
                 asr_result = transcriber.transcribe(audio_path)
                 transcript_text = asr_result.text
                 language = asr_result.language or language
-                duration = asr_result.duration or duration
+                if asr_result.duration:
+                    duration = asr_result.duration
                 raw_segments = asr_result.segments
             except Exception as e:
-                logger.warning("Whisper transcription note on %s: %s", audio_path, e)
+                logger.warning("TRANSCRIPTION_FAILED for call %s: %s", call_id, e)
+                transcript_text = ""  # Do NOT use fake transcript data
+        else:
+            logger.warning("No audio file available for transcription of call %s", call_id)
 
         JobRepository.update_stage(db, job_id, "transcription", "COMPLETED", 40)
 
@@ -145,34 +185,22 @@ def analyze_call_task(
                         turn_id=idx + 1,
                         speaker="SPEAKER_00" if idx % 2 == 0 else "SPEAKER_01",
                         start=getattr(seg, "start", 0.0),
-                        end=getattr(seg, "end", duration),
+                        end=getattr(seg, "end", duration or 0.0),
                         text=getattr(seg, "text", "").strip(),
                     )
                 )
-        else:
+        elif transcript_text.strip():
+            # Create a single turn from the transcript text if no segments available
             speaker_turns = [
                 SpeakerTurn(
                     turn_id=1,
                     speaker="SPEAKER_00",
                     start=0.0,
-                    end=3.0,
-                    text="Hello, thank you for calling customer support. How can I assist you today?",
-                ),
-                SpeakerTurn(
-                    turn_id=2,
-                    speaker="SPEAKER_01",
-                    start=3.5,
-                    end=9.0,
-                    text="Hi, I have an issue with my debit card. It was declined at a grocery store.",
-                ),
-                SpeakerTurn(
-                    turn_id=3,
-                    speaker="SPEAKER_00",
-                    start=9.5,
-                    end=14.0,
-                    text="I can certainly look into that for you. Let me check your account status.",
+                    end=duration or 0.0,
+                    text=transcript_text.strip(),
                 ),
             ]
+        # If no transcript text at all, leave speaker_turns empty
 
         unique_speakers = sorted(list({t.speaker for t in speaker_turns}))
         speaker_stats_dict = {

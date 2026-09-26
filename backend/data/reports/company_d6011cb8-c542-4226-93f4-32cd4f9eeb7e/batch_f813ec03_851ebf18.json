@@ -1,0 +1,52 @@
+{
+  "report_id": "851ebf18-7d25-4202-b5c1-32eace3c9724",
+  "company_id": "d6011cb8-c542-4226-93f4-32cd4f9eeb7e",
+  "company_name": "Batch Co 48d630",
+  "batch_id": "f813ec03-c2a5-4942-8428-496d56b02a38",
+  "batch_name": "customer_calls",
+  "original_filename": "customer_calls.zip",
+  "batch_status": "PROCESSING",
+  "total_calls": 3,
+  "status_distribution": {
+    "UPLOADED": 3
+  },
+  "completed_count": 0,
+  "processing_count": 0,
+  "failed_count": 0,
+  "uploaded_count": 3,
+  "average_duration_seconds": 0.0,
+  "total_duration_seconds": 0.0,
+  "risk_distribution": {
+    "LOW": 0,
+    "MEDIUM": 0,
+    "HIGH": 0,
+    "CRITICAL": 0
+  },
+  "average_risk_score": 0.0,
+  "calls_sample": [
+    {
+      "call_id": "d391aa9d-6705-4e6e-9662-78aadfca5993",
+      "external_id": "audio3",
+      "status": "UPLOADED",
+      "duration": 0.006,
+      "language": "en",
+      "created_at": "2026-09-26T20:53:12.348232+05:30"
+    },
+    {
+      "call_id": "17c6f1a6-8d5a-41ea-8452-e9ee7867c715",
+      "external_id": "audio2",
+      "status": "UPLOADED",
+      "duration": 0.006,
+      "language": "en",
+      "created_at": "2026-09-26T20:53:12.342209+05:30"
+    },
+    {
+      "call_id": "607600b3-65a1-475e-b683-5515312e9dda",
+      "external_id": "audio1",
+      "status": "UPLOADED",
+      "duration": 0.006,
+      "language": "en",
+      "created_at": "2026-09-26T20:53:12.329319+05:30"
+    }
+  ]
+}

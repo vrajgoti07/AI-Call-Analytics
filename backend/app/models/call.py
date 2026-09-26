@@ -30,6 +30,7 @@ from backend.app.models.base import Base
 
 if TYPE_CHECKING:
     from backend.app.models.company import Company
+    from backend.app.models.ingestion_batch import IngestionBatch
     from backend.app.models.transcript import Transcript
 
 
@@ -91,6 +92,12 @@ class Call(Base):
         nullable=True,
         index=True,
     )
+    batch_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ingestion_batches.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     external_id: Mapped[str | None] = mapped_column(
         String(128),
         nullable=True,
@@ -120,6 +127,7 @@ class Call(Base):
 
     # Relationships
     company: Mapped[Company | None] = relationship("Company", back_populates="calls")
+    batch: Mapped[IngestionBatch | None] = relationship("IngestionBatch", back_populates="calls")
     audio_file: Mapped[AudioFile | None] = relationship(
         "AudioFile",
         back_populates="call",
@@ -143,7 +151,18 @@ class Call(Base):
         Index("ix_calls_status_created_at", "status", "created_at"),
         Index("ix_calls_company_created_at", "company_id", "created_at"),
         Index("ix_calls_company_status", "company_id", "status"),
+        Index("ix_calls_company_batch", "company_id", "batch_id"),
     )
+
+    @property
+    def batch_name(self) -> str | None:
+        """Display name of the parent ingestion batch."""
+        return self.batch.display_name if self.batch else None
+
+    @property
+    def batch_filename(self) -> str | None:
+        """Original filename of the parent ingestion batch."""
+        return self.batch.original_filename if self.batch else None
 
     def __repr__(self) -> str:
         return f"<Call(id={self.id}, status='{self.status}', duration={self.duration})>"

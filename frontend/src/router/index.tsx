@@ -17,6 +17,12 @@ const RegisterPage = lazy(() =>
 const OverviewPage = lazy(() =>
   import('../pages/OverviewPage').then((m) => ({ default: m.OverviewPage })),
 )
+const BatchesPage = lazy(() =>
+  import('../pages/BatchesPage').then((m) => ({ default: m.BatchesPage })),
+)
+const BatchDetailPage = lazy(() =>
+  import('../pages/BatchDetailPage').then((m) => ({ default: m.BatchDetailPage })),
+)
 const CallsPage = lazy(() =>
   import('../pages/CallsPage').then((m) => ({ default: m.CallsPage })),
 )
@@ -93,6 +99,22 @@ export function AppRouter() {
             element={
               <Suspense fallback={<PageLoadingFallback />}>
                 <OverviewPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/batches"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <BatchesPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/batches/:batchId"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <BatchDetailPage />
               </Suspense>
             }
           />

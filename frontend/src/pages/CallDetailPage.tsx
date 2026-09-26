@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clock,
   Download,
+  FileArchive,
   FileCode,
   FileSpreadsheet,
   FileText,
@@ -153,6 +154,15 @@ export function CallDetailPage() {
                 <Globe className="h-3.5 w-3.5" />
                 {(call?.language || 'en').toUpperCase()}
               </span>
+              {call?.batch_id && (
+                <Link
+                  to={`/batches/${call.batch_id}`}
+                  className="inline-flex items-center gap-1 text-[#6D5AE6] hover:underline font-medium"
+                >
+                  <FileArchive className="h-3.5 w-3.5" />
+                  <span>Batch: {call.batch_name || call.batch_filename || 'ZIP Archive'}</span>
+                </Link>
+              )}
             </div>
           </div>
         </div>
