@@ -75,8 +75,9 @@ class ReportRepository:
         file_path_json: str | None = None,
         file_path_csv: str | None = None,
         summary_data: dict[str, Any] | None = None,
+        pdf_data: bytes | None = None,
     ) -> Report | None:
-        """Mark report as completed with paths to generated files."""
+        """Mark report as completed with paths to generated files and raw PDF bytes stored in PostgreSQL."""
         report = db.scalar(select(Report).where(Report.id == report_id))
         if not report:
             return None
@@ -86,6 +87,8 @@ class ReportRepository:
         report.file_path_json = file_path_json
         report.file_path_csv = file_path_csv
         report.summary_data = summary_data
+        if pdf_data is not None:
+            report.pdf_data = pdf_data
         report.updated_at = utc_now()
         db.commit()
         db.refresh(report)

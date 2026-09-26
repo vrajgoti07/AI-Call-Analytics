@@ -86,9 +86,10 @@ class CallService:
         safe_filename = f"{call_id}{ext}"
         destination = upload_dir / safe_filename
 
-        # 4. Stream write with size limit checking and SHA-256 hash computation
+        # 4. Stream write with size limit checking, SHA-256 hash computation, and memory buffer
         hasher = hashlib.sha256()
         total_size = 0
+        raw_chunks = []
         try:
             with open(destination, "wb") as buffer:
                 while chunk := file.file.read(1024 * 1024):  # 1MB chunks
@@ -97,12 +98,14 @@ class CallService:
                         raise AudioTooLargeError(total_size, settings.max_upload_size)
                     hasher.update(chunk)
                     buffer.write(chunk)
+                    raw_chunks.append(chunk)
         except Exception:
             if destination.exists():
                 destination.unlink()
             raise
 
         file_hash = hasher.hexdigest()
+        audio_bytes = b"".join(raw_chunks)
 
         # Duplicate check within company
         if call.company_id:
@@ -128,7 +131,7 @@ class CallService:
                     status_code=409,
                 )
 
-        # 5. Attach metadata to Call
+        # 5. Attach metadata and store audio binary directly into PostgreSQL
         CallRepository.attach_audio_file(
             db=db,
             call_id=call_id,
@@ -139,6 +142,7 @@ class CallService:
             sample_rate=settings.audio_sample_rate,
             channels=settings.audio_channels,
             file_hash=file_hash,
+            audio_data=audio_bytes,
         )
 
         return call

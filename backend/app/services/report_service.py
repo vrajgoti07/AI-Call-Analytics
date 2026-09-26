@@ -228,7 +228,9 @@ class ReportService:
                 risk=risk_record,
             )
 
-            # Mark completed
+            pdf_bytes = pdf_path.read_bytes() if pdf_path.exists() else None
+
+            # Mark completed and persist PDF binary in PostgreSQL
             ReportRepository.update_report_completed(
                 db=db,
                 report_id=report.id,
@@ -236,6 +238,7 @@ class ReportService:
                 file_path_json=str(json_path),
                 file_path_csv=str(csv_path),
                 summary_data=summary_data,
+                pdf_data=pdf_bytes,
             )
             return report
 
@@ -368,7 +371,9 @@ class ReportService:
                 calls=calls,
             )
 
-            # Mark completed
+            pdf_bytes = pdf_path.read_bytes() if pdf_path.exists() else None
+
+            # Mark completed and persist PDF binary in PostgreSQL
             ReportRepository.update_report_completed(
                 db=db,
                 report_id=report.id,
@@ -376,6 +381,7 @@ class ReportService:
                 file_path_json=str(json_path),
                 file_path_csv=str(csv_path),
                 summary_data=summary_data,
+                pdf_data=pdf_bytes,
             )
             return report
 
@@ -783,7 +789,13 @@ class ReportService:
 
         if fmt == "pdf":
             if not report.file_path_pdf or not os.path.exists(report.file_path_pdf):
-                raise AppException("FILE_NOT_FOUND", "PDF report file not found on disk.", 404)
+                if report.pdf_data:
+                    base_dir = Path("data") / "reports" / f"company_{company_id}"
+                    base_dir.mkdir(parents=True, exist_ok=True)
+                    restored_path = base_dir / f"restored_{str(report.id)[:8]}_{safe_base}.pdf"
+                    restored_path.write_bytes(report.pdf_data)
+                    return restored_path, "application/pdf", f"{safe_base}.pdf"
+                raise AppException("FILE_NOT_FOUND", "PDF report file not found on disk or database.", 404)
             return Path(report.file_path_pdf), "application/pdf", f"{safe_base}.pdf"
 
         elif fmt == "json":

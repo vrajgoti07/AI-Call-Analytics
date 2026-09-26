@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from fastapi import APIRouter, Depends, File, Query, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 
 from backend.app.core.auth import get_current_user
@@ -190,18 +190,25 @@ def get_call_audio(
             message=f"No audio file associated with call '{call_id}'.",
             status_code=status.HTTP_404_NOT_FOUND,
         )
-    audio_path = Path(call.audio_file.storage_key)
-    if not audio_path.exists():
+    audio_path = Path(call.audio_file.storage_key) if call.audio_file.storage_key else None
+    if audio_path and audio_path.exists():
+        return FileResponse(
+            path=str(audio_path),
+            media_type=call.audio_file.mime_type or "audio/wav",
+            filename=call.audio_file.filename,
+        )
+    elif call.audio_file.audio_data:
+        return Response(
+            content=call.audio_file.audio_data,
+            media_type=call.audio_file.mime_type or "audio/wav",
+            headers={"Content-Disposition": f'inline; filename="{call.audio_file.filename}"'},
+        )
+    else:
         raise AppException(
             code="AUDIO_FILE_MISSING",
-            message=f"Audio file '{call.audio_file.filename}' is not found on disk.",
+            message=f"Audio file '{call.audio_file.filename}' is not found on disk or database.",
             status_code=status.HTTP_404_NOT_FOUND,
         )
-    return FileResponse(
-        path=str(audio_path),
-        media_type=call.audio_file.mime_type or "audio/wav",
-        filename=call.audio_file.filename,
-    )
 
 
 @router.delete(

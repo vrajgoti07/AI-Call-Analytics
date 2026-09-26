@@ -128,8 +128,9 @@ class CallRepository:
         channels: int = 1,
         duration: float | None = None,
         file_hash: str | None = None,
+        audio_data: bytes | None = None,
     ) -> AudioFile:
-        """Attach or replace audio file metadata for a call."""
+        """Attach or replace audio file metadata for a call, storing audio bytes in PostgreSQL."""
         call = CallRepository.get_by_id(db, call_id)
         if not call:
             raise ValueError(f"Call with id {call_id} does not exist.")
@@ -145,6 +146,8 @@ class CallRepository:
             audio.duration = duration
             if file_hash:
                 audio.file_hash = file_hash
+            if audio_data is not None:
+                audio.audio_data = audio_data
         else:
             audio = AudioFile(
                 call_id=call_id,
@@ -156,6 +159,7 @@ class CallRepository:
                 channels=channels,
                 duration=duration,
                 file_hash=file_hash,
+                audio_data=audio_data,
             )
             db.add(audio)
 

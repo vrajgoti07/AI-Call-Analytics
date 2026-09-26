@@ -14,6 +14,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     JSON,
+    LargeBinary,
     String,
     Text,
 )
@@ -101,6 +102,7 @@ class Report(Base):
     file_path_pdf: Mapped[str | None] = mapped_column(String(512), nullable=True)
     file_path_json: Mapped[str | None] = mapped_column(String(512), nullable=True)
     file_path_csv: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    pdf_data: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
 
     # Structured summary metrics
     summary_data: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)

@@ -251,6 +251,7 @@ class BulkUploadService:
                 mime_type=mime_type,
                 size=len(content),
                 file_hash=file_hash,
+                audio_data=content,
                 sample_rate=settings.audio_sample_rate,
                 channels=settings.audio_channels,
             )

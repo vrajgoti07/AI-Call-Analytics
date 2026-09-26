@@ -19,6 +19,7 @@ from sqlalchemy import (
     Index,
     Integer,
     JSON,
+    LargeBinary,
     String,
     Text,
 )
@@ -175,6 +176,7 @@ class AudioFile(Base):
     sample_rate: Mapped[int] = mapped_column(Integer, nullable=False, default=16000)
     channels: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    audio_data: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
