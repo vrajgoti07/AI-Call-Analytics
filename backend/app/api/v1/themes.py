@@ -1,7 +1,8 @@
 """
 AI Call Analytics — Theme Discovery API Router.
 
-Endpoints for retrieving persisted theme discovery runs and clusters.
+Endpoints for retrieving persisted theme discovery runs and clusters,
+scoped strictly to the user's company workspace.
 """
 
 from __future__ import annotations
@@ -11,9 +12,11 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from backend.app.core.auth import get_current_user
 from backend.app.core.exceptions import AppException
 from backend.app.database.session import get_db
 from backend.app.models.theme import Theme, ThemeDiscoveryRun
+from backend.app.models.user import User
 from backend.app.schemas.theme import ThemeItemResponse, ThemeListResponse
 
 router = APIRouter(prefix="/themes", tags=["themes"])
@@ -26,6 +29,7 @@ router = APIRouter(prefix="/themes", tags=["themes"])
 )
 def list_themes(
     run_id: uuid.UUID | None = Query(default=None, description="Optional filter by discovery run ID"),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ThemeListResponse:
     """Retrieve persisted conversational themes and cluster summaries from Phase 7."""
@@ -68,6 +72,7 @@ def list_themes(
 )
 def get_theme(
     theme_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ThemeItemResponse:
     """Retrieve specific theme cluster details and keywords."""

@@ -49,6 +49,56 @@ export interface CallListResponse {
   pagination: PaginationMeta
 }
 
+export interface SkippedFileInfo {
+  filename: string
+  reason: string
+}
+
+export interface BulkIngestResponse {
+  total_files: number
+  processed_count: number
+  created_calls: CallResponse[]
+  skipped_files: SkippedFileInfo[]
+}
+
+export interface ReportGenerateRequest {
+  report_type?: 'INDIVIDUAL_CALL' | 'COMPANY_ANALYTICS' | 'DATE_RANGE' | string
+  call_id?: string
+  date_from?: string
+  date_to?: string
+  title?: string
+}
+
+export interface ReportResponse {
+  id: string
+  company_id: string
+  call_id: string | null
+  title: string
+  report_type: string
+  status: 'PENDING' | 'GENERATING' | 'COMPLETED' | 'FAILED' | string
+  date_from: string | null
+  date_to: string | null
+  has_pdf: boolean
+  has_json: boolean
+  has_csv: boolean
+  summary_data: Record<string, unknown> | null
+  error_message: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ReportListResponse {
+  items: ReportResponse[]
+  pagination: PaginationMeta
+}
+
+export interface ReportListParams {
+  call_id?: string
+  report_type?: string
+  page?: number
+  page_size?: number
+}
+
 export interface CallListParams {
   status?: string
   language?: string

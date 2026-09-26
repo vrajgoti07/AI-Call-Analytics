@@ -11,7 +11,10 @@ import json
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from backend.app.core.auth import get_current_user
+from backend.app.models.user import User
 
 router = APIRouter(prefix="/evaluation", tags=["evaluation"])
 
@@ -23,7 +26,9 @@ _EVAL_FILE = _PROJECT_ROOT / "reports" / "evaluation" / "evaluation_results.json
     "",
     summary="Retrieve latest AI quality benchmarks and component evaluation results",
 )
-def get_evaluation_results() -> dict[str, Any]:
+def get_evaluation_results(
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
     """
     Returns benchmark scores (WER, DER, F1, MRR, AUC) and component breakdowns
     generated during Phase 9 evaluation against MInDS-14 ground truth.

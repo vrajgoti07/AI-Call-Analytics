@@ -1,7 +1,14 @@
+import { useState } from 'react'
 import {
+  AlertCircle,
   ArrowLeft,
   Calendar,
+  CheckCircle2,
   Clock,
+  Download,
+  FileCode,
+  FileSpreadsheet,
+  FileText,
   Globe,
   Loader2,
   PlayCircle,
@@ -20,6 +27,7 @@ import { useCall } from '../hooks/useCall'
 import { useTranscript, useTranscriptTurns } from '../hooks/useTranscript'
 import { useAnalysisStatus, useAnalysisSummary, useStartAnalysis } from '../hooks/useAnalysis'
 import { useRisk } from '../hooks/useRisk'
+import { useCallReport, useDownloadReport, useGenerateReport } from '../hooks/useReports'
 import { getAudioStreamUrl } from '../api/calls'
 import { formatDateTime, formatDuration } from '../lib/utils'
 
@@ -37,6 +45,49 @@ export function CallDetailPage() {
   const { data: summary, isLoading: summaryLoading } = useAnalysisSummary(callId)
   const { data: analysisStatus } = useAnalysisStatus(callId)
   const startAnalysisMutation = useStartAnalysis()
+
+  const { data: callReport, refetch: refetchReport } = useCallReport(callId)
+  const generateReportMutation = useGenerateReport()
+  const downloadReportMutation = useDownloadReport()
+  const [downloadingFormat, setDownloadingFormat] = useState<string | null>(null)
+  const [reportError, setReportError] = useState<string | null>(null)
+
+  const handleGenerateReport = async () => {
+    if (!callId) return
+    setReportError(null)
+    try {
+      await generateReportMutation.mutateAsync({
+        report_type: 'INDIVIDUAL_CALL',
+        call_id: callId,
+      })
+      refetchReport()
+    } catch (err) {
+      setReportError(err instanceof Error ? err.message : 'Report generation failed')
+    }
+  }
+
+  const handleDownload = async (format: 'pdf' | 'json' | 'csv') => {
+    if (!callReport?.id) return
+    setDownloadingFormat(format)
+    try {
+      await downloadReportMutation.mutateAsync({
+        reportId: callReport.id,
+        format,
+        fallbackFilename: `call-${call?.external_id || callId?.slice(0, 8)}-report.${format}`,
+      })
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Download failed')
+    } finally {
+      setDownloadingFormat(null)
+    }
+  }
+
+  const isReportReady = callReport?.status === 'COMPLETED'
+  const isReportGenerating =
+    generateReportMutation.isPending ||
+    callReport?.status === 'GENERATING' ||
+    callReport?.status === 'PENDING'
+  const isReportFailed = callReport?.status === 'FAILED'
 
   if (callError) {
     return (
@@ -106,9 +157,100 @@ export function CallDetailPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {summary?.dominant_sentiment && (
             <SentimentBadge sentiment={summary.dominant_sentiment} />
+          )}
+
+          {/* Report Actions */}
+          {isReportReady && (
+            <div className="flex items-center gap-1.5 p-1 rounded-lg bg-emerald-50 border border-emerald-200">
+              <span className="text-[11px] font-medium text-emerald-800 px-2 flex items-center gap-1 font-mono">
+                <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                Report Ready
+              </span>
+
+              <button
+                type="button"
+                onClick={() => handleDownload('pdf')}
+                disabled={downloadingFormat === 'pdf'}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#6D5AE6] hover:bg-[#5844D6] text-white text-xs font-medium cursor-pointer transition-colors shadow-2xs"
+                title="Download PDF Report"
+              >
+                {downloadingFormat === 'pdf' ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Download className="h-3 w-3" />
+                )}
+                <span>Download PDF</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDownload('json')}
+                disabled={downloadingFormat === 'json'}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white hover:bg-neutral-100 text-neutral-700 text-xs font-medium border border-neutral-200 cursor-pointer transition-colors"
+                title="Download JSON Telemetry"
+              >
+                <FileCode className="h-3 w-3 text-neutral-500" />
+                <span>JSON</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDownload('csv')}
+                disabled={downloadingFormat === 'csv'}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white hover:bg-neutral-100 text-neutral-700 text-xs font-medium border border-neutral-200 cursor-pointer transition-colors"
+                title="Download CSV Transcript"
+              >
+                <FileSpreadsheet className="h-3 w-3 text-neutral-500" />
+                <span>CSV</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleGenerateReport}
+                disabled={isReportGenerating}
+                className="p-1 text-neutral-400 hover:text-neutral-700 rounded transition-colors"
+                title="Re-generate report"
+              >
+                <RefreshCw className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+
+          {isReportGenerating && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-600" />
+              <span>Generating Report...</span>
+            </div>
+          )}
+
+          {isReportFailed && (
+            <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+              <span className="flex items-center gap-1 text-[11px]">
+                <AlertCircle className="h-3 w-3 text-rose-600" /> Report Failed
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateReport}
+                leftIcon={<RefreshCw className="h-3 w-3" />}
+              >
+                Retry
+              </Button>
+            </div>
+          )}
+
+          {!isReportReady && !isReportGenerating && !isReportFailed && (
+            <Button
+              size="sm"
+              onClick={handleGenerateReport}
+              isLoading={generateReportMutation.isPending}
+              leftIcon={<FileText className="h-3.5 w-3.5" />}
+            >
+              Generate Report
+            </Button>
           )}
 
           <Button
@@ -118,10 +260,18 @@ export function CallDetailPage() {
             isLoading={startAnalysisMutation.isPending}
             leftIcon={<RefreshCw className="h-3.5 w-3.5" />}
           >
-            Reprocess Pipeline
+            Reprocess
           </Button>
         </div>
       </div>
+
+      {reportError && (
+        <ErrorAlert
+          title="Report Generation Alert"
+          message={reportError}
+          onRetry={handleGenerateReport}
+        />
+      )}
 
       {/* Real-time Pipeline Progress Tracker (if active) */}
       {isPipelineRunning && (

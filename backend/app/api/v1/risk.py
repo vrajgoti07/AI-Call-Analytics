@@ -1,7 +1,8 @@
 """
 AI Call Analytics — Escalation Risk API Router.
 
-Endpoints for retrieving persisted escalation risk evaluations.
+Endpoints for retrieving persisted escalation risk evaluations,
+scoped strictly to the user's company workspace.
 """
 
 from __future__ import annotations
@@ -11,9 +12,11 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from backend.app.core.auth import get_current_user
 from backend.app.core.exceptions import AppException, CallNotFoundError
 from backend.app.database.session import get_db
 from backend.app.models.escalation import EscalationRisk
+from backend.app.models.user import User
 from backend.app.repositories.call_repository import CallRepository
 from backend.app.schemas.risk import EscalationRiskResponse
 
@@ -27,10 +30,11 @@ router = APIRouter(prefix="/calls", tags=["risk"])
 )
 def get_escalation_risk(
     call_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> EscalationRiskResponse:
     """Retrieve persisted multi-modal risk score, probability, and explainability factors."""
-    call = CallRepository.get_by_id(db, call_id)
+    call = CallRepository.get_by_id(db, call_id, company_id=current_user.company_id)
     if not call:
         raise CallNotFoundError(call_id)
 

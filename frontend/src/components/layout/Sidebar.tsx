@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Cpu,
+  FileText,
   LayoutDashboard,
   PhoneCall,
   Search,
@@ -33,6 +34,7 @@ const navSections: Array<{ title: string; items: NavItem[] }> = [
   {
     title: 'Analytics',
     items: [
+      { name: 'Reports', to: '/reports', icon: FileText },
       { name: 'Themes', to: '/themes', icon: Sparkles },
       { name: 'Escalation Risk', to: '/risk', icon: AlertTriangle },
       { name: 'AI Evaluation', to: '/evaluation', icon: Activity },

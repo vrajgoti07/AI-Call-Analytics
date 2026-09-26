@@ -94,6 +94,33 @@ class DiarizationFailedError(AppException):
         )
 
 
+class AuthenticationError(AppException):
+    def __init__(self, message: str = "Invalid credentials or authentication token.") -> None:
+        super().__init__(
+            code="AUTHENTICATION_FAILED",
+            message=message,
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+
+
+class ForbiddenError(AppException):
+    def __init__(self, message: str = "You do not have permission to perform this action.") -> None:
+        super().__init__(
+            code="FORBIDDEN",
+            message=message,
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+
+class CompanyNotFoundError(AppException):
+    def __init__(self, company_id: Any) -> None:
+        super().__init__(
+            code="COMPANY_NOT_FOUND",
+            message=f"Company '{company_id}' was not found.",
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     """Register uniform global exception handlers on the FastAPI application."""
 

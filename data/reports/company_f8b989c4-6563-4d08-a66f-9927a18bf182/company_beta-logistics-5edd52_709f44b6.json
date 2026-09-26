@@ -1,0 +1,33 @@
+{
+  "report_id": "709f44b6-c33d-46a6-a9a8-35c310d481eb",
+  "company_id": "f8b989c4-6563-4d08-a66f-9927a18bf182",
+  "company_name": "Beta Logistics 5edd52",
+  "company_slug": "beta-logistics-5edd52",
+  "date_from": null,
+  "date_to": null,
+  "total_calls": 1,
+  "status_distribution": {
+    "UPLOADED": 1
+  },
+  "completed_count": 0,
+  "processing_count": 0,
+  "failed_count": 0,
+  "average_duration_seconds": 0.0,
+  "risk_distribution": {
+    "LOW": 0,
+    "MEDIUM": 0,
+    "HIGH": 0,
+    "CRITICAL": 0
+  },
+  "average_risk_score": 0.0,
+  "calls_sample": [
+    {
+      "call_id": "2ed4a589-94df-4a66-af35-10df7569b919",
+      "external_id": "CALL-B-SECRET",
+      "status": "UPLOADED",
+      "duration": null,
+      "language": "en",
+      "created_at": "2026-09-26T11:43:02.189628+05:30"
+    }
+  ]
+}

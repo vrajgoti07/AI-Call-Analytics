@@ -21,18 +21,21 @@ class CallRepository:
     """Repository handling CRUD operations for Call and AudioFile records."""
 
     @staticmethod
-    def get_by_id(db: Session, call_id: uuid.UUID) -> Call | None:
-        """Retrieve a Call by its primary key with audio_file and transcript loaded."""
+    def get_by_id(db: Session, call_id: uuid.UUID, company_id: uuid.UUID | None = None) -> Call | None:
+        """Retrieve a Call by its primary key with audio_file and transcript loaded, optionally filtered by company."""
         stmt = (
             select(Call)
             .options(joinedload(Call.audio_file), joinedload(Call.transcript))
             .where(Call.id == call_id)
         )
+        if company_id is not None:
+            stmt = stmt.where(Call.company_id == company_id)
         return db.scalar(stmt)
 
     @staticmethod
     def list_calls(
         db: Session,
+        company_id: uuid.UUID | None = None,
         status: str | None = None,
         language: str | None = None,
         date_from: datetime | None = None,
@@ -41,13 +44,15 @@ class CallRepository:
         page_size: int = 20,
     ) -> tuple[list[Call], int, int]:
         """
-        List calls with optional filtering, bounded pagination, and total count.
+        List calls with optional filtering, company tenant scoping, bounded pagination, and total count.
 
         Returns:
             Tuple of (calls_list, total_count, total_pages)
         """
         base_query = select(Call).options(joinedload(Call.audio_file))
 
+        if company_id is not None:
+            base_query = base_query.where(Call.company_id == company_id)
         if status:
             base_query = base_query.where(Call.status == status)
         if language:
@@ -76,12 +81,14 @@ class CallRepository:
     @staticmethod
     def create_call(
         db: Session,
+        company_id: uuid.UUID | None = None,
         external_id: str | None = None,
         language: str | None = "en",
         status: str = CallStatus.UPLOADED.value,
     ) -> Call:
-        """Create and persist a new Call record."""
+        """Create and persist a new Call record associated with a company."""
         call = Call(
+            company_id=company_id,
             external_id=external_id,
             language=language,
             status=status,
@@ -120,6 +127,7 @@ class CallRepository:
         sample_rate: int = 16000,
         channels: int = 1,
         duration: float | None = None,
+        file_hash: str | None = None,
     ) -> AudioFile:
         """Attach or replace audio file metadata for a call."""
         call = CallRepository.get_by_id(db, call_id)
@@ -135,6 +143,8 @@ class CallRepository:
             audio.sample_rate = sample_rate
             audio.channels = channels
             audio.duration = duration
+            if file_hash:
+                audio.file_hash = file_hash
         else:
             audio = AudioFile(
                 call_id=call_id,
@@ -145,6 +155,7 @@ class CallRepository:
                 sample_rate=sample_rate,
                 channels=channels,
                 duration=duration,
+                file_hash=file_hash,
             )
             db.add(audio)
 

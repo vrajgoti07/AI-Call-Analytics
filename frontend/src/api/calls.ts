@@ -4,7 +4,14 @@
 
 import { apiClient } from './client'
 import { API_BASE_URL } from '../lib/constants'
-import type { CallCreate, CallDetailResponse, CallListParams, CallListResponse, CallResponse } from './types'
+import type {
+  BulkIngestResponse,
+  CallCreate,
+  CallDetailResponse,
+  CallListParams,
+  CallListResponse,
+  CallResponse,
+} from './types'
 
 export async function listCalls(params: CallListParams = {}): Promise<CallListResponse> {
   const queryParams: Record<string, string | number | undefined> = {
@@ -34,6 +41,16 @@ export async function uploadAudio(callId: string, file: File): Promise<CallRespo
   formData.append('file', file)
 
   return apiClient<CallResponse>(`/api/v1/calls/${callId}/upload`, {
+    method: 'POST',
+    body: formData,
+  })
+}
+
+export async function uploadZip(file: File, autoAnalyze: boolean = true): Promise<BulkIngestResponse> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  return apiClient<BulkIngestResponse>(`/api/v1/calls/upload-zip?auto_analyze=${autoAnalyze}`, {
     method: 'POST',
     body: formData,
   })

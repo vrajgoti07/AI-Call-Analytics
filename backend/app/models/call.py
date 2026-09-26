@@ -28,6 +28,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.app.models.base import Base
 
 if TYPE_CHECKING:
+    from backend.app.models.company import Company
     from backend.app.models.transcript import Transcript
 
 
@@ -83,6 +84,12 @@ class Call(Base):
         primary_key=True,
         default=uuid.uuid4,
     )
+    company_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("companies.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     external_id: Mapped[str | None] = mapped_column(
         String(128),
         nullable=True,
@@ -111,6 +118,7 @@ class Call(Base):
     )
 
     # Relationships
+    company: Mapped[Company | None] = relationship("Company", back_populates="calls")
     audio_file: Mapped[AudioFile | None] = relationship(
         "AudioFile",
         back_populates="call",
@@ -132,6 +140,8 @@ class Call(Base):
 
     __table_args__ = (
         Index("ix_calls_status_created_at", "status", "created_at"),
+        Index("ix_calls_company_created_at", "company_id", "created_at"),
+        Index("ix_calls_company_status", "company_id", "status"),
     )
 
     def __repr__(self) -> str:
@@ -164,6 +174,7 @@ class AudioFile(Base):
     duration: Mapped[float | None] = mapped_column(Float, nullable=True)
     sample_rate: Mapped[int] = mapped_column(Integer, nullable=False, default=16000)
     channels: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

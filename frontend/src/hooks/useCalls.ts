@@ -3,7 +3,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createCall, deleteCall, listCalls, uploadAudio } from '../api/calls'
+import { createCall, deleteCall, listCalls, uploadAudio, uploadZip } from '../api/calls'
 import type { CallCreate, CallListParams, CallListResponse } from '../api/types'
 
 export const CALLS_QUERY_KEY = ['calls']
@@ -34,6 +34,18 @@ export function useUploadAudio() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: CALLS_QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: ['call', variables.callId] })
+    },
+  })
+}
+
+export function useUploadZip() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ file, autoAnalyze }: { file: File; autoAnalyze?: boolean }) =>
+      uploadZip(file, autoAnalyze),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CALLS_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: ['jobs'] })
     },
   })
 }

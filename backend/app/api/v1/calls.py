@@ -1,29 +1,35 @@
 """
 AI Call Analytics — Calls API Router.
 
-Endpoints for call creation, audio file uploads, retrieval, listing, and deletion.
+Endpoints for call creation, audio file uploads, retrieval, listing, and deletion,
+scoped strictly to the authenticated user's company workspace.
 """
 
 from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from pathlib import Path
 from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from backend.app.core.exceptions import CallNotFoundError
+from backend.app.core.auth import get_current_user
+from backend.app.core.exceptions import AppException, CallNotFoundError
 from backend.app.database.session import get_db
 from backend.app.models.call import CallStatus
+from backend.app.models.user import User
 from backend.app.repositories.call_repository import CallRepository
 from backend.app.repositories.job_repository import JobRepository
 from backend.app.schemas.call import (
+    BulkIngestResponse,
     CallCreate,
     CallDetailResponse,
     CallListResponse,
     CallResponse,
 )
 from backend.app.schemas.common import PaginationMeta
+from backend.app.services.bulk_upload_service import BulkUploadService
 from backend.app.services.call_service import CallService
 
 router = APIRouter(prefix="/calls", tags=["calls"])
@@ -37,11 +43,13 @@ router = APIRouter(prefix="/calls", tags=["calls"])
 )
 def create_call(
     payload: CallCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> CallResponse:
-    """Create a new Call entity before uploading audio."""
+    """Create a new Call entity before uploading audio, associated with current user's company."""
     call = CallService.create_call(
         db=db,
+        company_id=current_user.company_id,
         external_id=payload.external_id,
         language=payload.language,
     )
@@ -56,14 +64,42 @@ def create_call(
 def upload_audio(
     call_id: uuid.UUID,
     file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> CallResponse:
     """
     Upload an audio file (.wav, .mp3, .flac) for an existing Call entity.
-    Validates file format, size limits, and stores file safely.
+    Enforces company workspace ownership.
     """
-    call = CallService.upload_audio_for_call(db=db, call_id=call_id, file=file)
-    return CallResponse.model_validate(call)
+    call = CallRepository.get_by_id(db, call_id, company_id=current_user.company_id)
+    if not call:
+        raise CallNotFoundError(call_id)
+
+    updated_call = CallService.upload_audio_for_call(db=db, call_id=call_id, file=file)
+    return CallResponse.model_validate(updated_call)
+
+
+@router.post(
+    "/upload-zip",
+    response_model=BulkIngestResponse,
+    summary="Upload and ingest multiple calls from a ZIP archive",
+)
+def upload_zip(
+    file: UploadFile = File(...),
+    auto_analyze: bool = Query(default=True, description="Automatically queue AI analysis pipeline for ingested calls"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> BulkIngestResponse:
+    """
+    Ingest call recordings from a ZIP archive scoped strictly to current user's workspace.
+    Validates ZIP, detects duplicates via SHA-256, protects against path traversal and zip bombs.
+    """
+    return BulkUploadService.process_zip_upload(
+        db=db,
+        company_id=current_user.company_id,
+        zip_file=file,
+        auto_analyze=auto_analyze,
+    )
 
 
 @router.get(
@@ -78,11 +114,13 @@ def list_calls(
     date_to: datetime | None = Query(default=None, description="Created on or before"),
     page: int = Query(default=1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> CallListResponse:
-    """List calls with bounded pagination and optional filtering."""
+    """List calls scoped strictly to the authenticated user's workspace."""
     calls, total, total_pages = CallRepository.list_calls(
         db=db,
+        company_id=current_user.company_id,
         status=status_filter,
         language=language,
         date_from=date_from,
@@ -108,10 +146,11 @@ def list_calls(
 )
 def get_call(
     call_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> CallDetailResponse:
-    """Retrieve detailed metadata for a specific call."""
-    call = CallRepository.get_by_id(db, call_id)
+    """Retrieve detailed metadata for a specific call belonging to the user's workspace."""
+    call = CallRepository.get_by_id(db, call_id, company_id=current_user.company_id)
     if not call:
         raise CallNotFoundError(call_id)
 
@@ -138,13 +177,11 @@ def get_call(
 )
 def get_call_audio(
     call_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> FileResponse:
-    """Stream stored audio file for browser playback and waveform rendering."""
-    from pathlib import Path
-    from backend.app.core.exceptions import AppException
-
-    call = CallRepository.get_by_id(db, call_id)
+    """Stream stored audio file for browser playback, enforcing tenant boundary."""
+    call = CallRepository.get_by_id(db, call_id, company_id=current_user.company_id)
     if not call:
         raise CallNotFoundError(call_id)
     if not call.audio_file or not call.audio_file.storage_key:
@@ -174,9 +211,14 @@ def get_call_audio(
 )
 def delete_call(
     call_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> None:
-    """Permanently delete a call and cascade delete all associated data."""
+    """Permanently delete a call from the user's workspace."""
+    call = CallRepository.get_by_id(db, call_id, company_id=current_user.company_id)
+    if not call:
+        raise CallNotFoundError(call_id)
+
     deleted = CallRepository.delete_call(db, call_id)
     if not deleted:
         raise CallNotFoundError(call_id)

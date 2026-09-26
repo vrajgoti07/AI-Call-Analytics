@@ -6,6 +6,7 @@ Coordinates call creation, secure audio upload handling, and background task dis
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import shutil
@@ -37,12 +38,14 @@ class CallService:
     @staticmethod
     def create_call(
         db: Session,
+        company_id: uuid.UUID | None = None,
         external_id: str | None = None,
         language: str | None = "en",
     ) -> Call:
-        """Create a new Call entity in UPLOADED state."""
+        """Create a new Call entity in UPLOADED state scoped to a company."""
         return CallRepository.create_call(
             db=db,
+            company_id=company_id,
             external_id=external_id,
             language=language,
             status=CallStatus.UPLOADED.value,
@@ -75,14 +78,16 @@ class CallService:
         if file.content_type and file.content_type not in settings.allowed_mime_types:
             logger.warning("Uncommon MIME type '%s' for '%s'", file.content_type, filename)
 
-        # 3. Create destination directory
-        upload_dir = Path(settings.storage_local_dir)
+        # 3. Create company-isolated destination directory
+        company_folder = f"company_{call.company_id}" if call.company_id else "global"
+        upload_dir = Path(settings.storage_local_dir) / company_folder
         upload_dir.mkdir(parents=True, exist_ok=True)
 
         safe_filename = f"{call_id}{ext}"
         destination = upload_dir / safe_filename
 
-        # 4. Stream write with size limit checking
+        # 4. Stream write with size limit checking and SHA-256 hash computation
+        hasher = hashlib.sha256()
         total_size = 0
         try:
             with open(destination, "wb") as buffer:
@@ -90,11 +95,38 @@ class CallService:
                     total_size += len(chunk)
                     if total_size > settings.max_upload_size:
                         raise AudioTooLargeError(total_size, settings.max_upload_size)
+                    hasher.update(chunk)
                     buffer.write(chunk)
         except Exception:
             if destination.exists():
                 destination.unlink()
             raise
+
+        file_hash = hasher.hexdigest()
+
+        # Duplicate check within company
+        if call.company_id:
+            from sqlalchemy import select
+            from backend.app.models.call import AudioFile
+            existing_dup = db.scalar(
+                select(AudioFile)
+                .join(Call, AudioFile.call_id == Call.id)
+                .where(
+                    Call.company_id == call.company_id,
+                    AudioFile.call_id != call_id,
+                    AudioFile.file_hash == file_hash,
+                )
+                .limit(1)
+            )
+            if existing_dup:
+                if destination.exists():
+                    destination.unlink()
+                from backend.app.core.exceptions import AppException
+                raise AppException(
+                    code="DUPLICATE_CALL",
+                    message="An identical audio recording already exists in this company workspace.",
+                    status_code=409,
+                )
 
         # 5. Attach metadata to Call
         CallRepository.attach_audio_file(
@@ -106,6 +138,7 @@ class CallService:
             size=total_size,
             sample_rate=settings.audio_sample_rate,
             channels=settings.audio_channels,
+            file_hash=file_hash,
         )
 
         return call

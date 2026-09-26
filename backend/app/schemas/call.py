@@ -40,6 +40,7 @@ class CallResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
+    company_id: uuid.UUID | None = None
     external_id: str | None = None
     status: str
     duration: float | None = None
@@ -62,3 +63,20 @@ class CallListResponse(BaseModel):
 
     items: list[CallResponse]
     pagination: PaginationMeta
+
+
+class SkippedFileInfo(BaseModel):
+    """Information regarding a file within a ZIP archive that was not processed."""
+
+    filename: str
+    reason: str
+
+
+class BulkIngestResponse(BaseModel):
+    """Result summary of a bulk ZIP or multi-file call upload."""
+
+    total_files: int
+    processed_count: int
+    skipped_count: int = 0
+    created_calls: list[CallResponse]
+    skipped_files: list[SkippedFileInfo]

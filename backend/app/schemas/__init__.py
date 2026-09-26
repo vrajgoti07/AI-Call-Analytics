@@ -5,15 +5,31 @@ from backend.app.schemas.analysis import (
     AnalysisSummaryResponse,
     StartAnalysisRequest,
 )
+from backend.app.schemas.auth import (
+    CompanyCreate,
+    CompanyResponse,
+    LoginRequest,
+    RegisterRequest,
+    TokenPayload,
+    TokenResponse,
+    UserResponse,
+)
 from backend.app.schemas.call import (
     AudioFileResponse,
+    BulkIngestResponse,
     CallCreate,
     CallDetailResponse,
     CallListResponse,
     CallResponse,
+    SkippedFileInfo,
 )
 from backend.app.schemas.common import ErrorDetail, ErrorResponse, PaginationMeta
 from backend.app.schemas.job import JobListResponse, JobResponse
+from backend.app.schemas.report import (
+    ReportGenerateRequest,
+    ReportListResponse,
+    ReportResponse,
+)
 from backend.app.schemas.risk import EscalationRiskResponse
 from backend.app.schemas.search import (
     SearchResultItem,
@@ -50,4 +66,16 @@ __all__ = [
     "EscalationRiskResponse",
     "JobResponse",
     "JobListResponse",
+    "CompanyCreate",
+    "CompanyResponse",
+    "RegisterRequest",
+    "LoginRequest",
+    "UserResponse",
+    "TokenResponse",
+    "TokenPayload",
+    "BulkIngestResponse",
+    "SkippedFileInfo",
+    "ReportGenerateRequest",
+    "ReportResponse",
+    "ReportListResponse",
 ]

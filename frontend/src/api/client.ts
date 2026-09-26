@@ -84,6 +84,12 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
     Accept: 'application/json',
   }
 
+  // Automatically attach auth token if available in storage
+  const storedToken = typeof localStorage !== 'undefined' ? localStorage.getItem('ai_call_token') : null
+  if (storedToken && !(headers && (headers as Record<string, string>)['Authorization'])) {
+    defaultHeaders['Authorization'] = `Bearer ${storedToken}`
+  }
+
   if (!(restOptions.body instanceof FormData)) {
     defaultHeaders['Content-Type'] = 'application/json'
   }
@@ -151,7 +157,13 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
 
       // Friendly fallback messages for standard HTTP codes
       if (!code && response.status === 404) code = 'NOT_FOUND'
-      if (!code && response.status === 401) code = 'UNAUTHORIZED'
+      if (!code && response.status === 401) {
+        code = 'UNAUTHORIZED'
+        if (!endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')) {
+          localStorage.removeItem('ai_call_token')
+          localStorage.removeItem('ai_call_user')
+        }
+      }
       if (!code && response.status === 403) code = 'FORBIDDEN'
       if (!code && response.status === 409) code = 'CONFLICT'
       if (!code && response.status === 413) code = 'PAYLOAD_TOO_LARGE'

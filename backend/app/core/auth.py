@@ -1,0 +1,108 @@
+"""
+AI Call Analytics — Authentication Dependencies & Security Guards.
+
+Provides FastAPI dependencies for extracting authenticated users, enforcing active status,
+verifying role-based access, and retrieving the active tenant context.
+"""
+
+from __future__ import annotations
+
+import uuid
+from typing import Callable
+
+from fastapi import Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.orm import Session
+
+from backend.app.core.exceptions import AuthenticationError, ForbiddenError
+from backend.app.database.session import get_db
+from backend.app.models.user import User
+from backend.app.repositories.user_repository import UserRepository
+from backend.app.services.auth_service import AuthService
+
+security = HTTPBearer(auto_error=False)
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    db: Session = Depends(get_db),
+) -> User:
+    """
+    Extract, validate JWT bearer token, and return the active User record.
+    Raises AuthenticationError if token is absent, invalid, or expired.
+    """
+    if not credentials or not credentials.credentials:
+        raise AuthenticationError("Authentication token is required.")
+
+    payload = AuthService.decode_access_token(credentials.credentials)
+    if not payload:
+        raise AuthenticationError("Invalid or expired authentication token.")
+
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        raise AuthenticationError("Malformed token: missing subject identifier.")
+
+    try:
+        user_id = uuid.UUID(user_id_str)
+    except (ValueError, TypeError):
+        raise AuthenticationError("Malformed token: subject is not a valid UUID.")
+
+    user = UserRepository.get_by_id(db, user_id)
+    if not user:
+        raise AuthenticationError("User account does not exist.")
+
+    if not user.is_active:
+        raise AuthenticationError("User account is inactive.")
+
+    return user
+
+
+def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    db: Session = Depends(get_db),
+) -> User | None:
+    """
+    Optionally extract authenticated user. Returns None if unauthenticated.
+    """
+    if not credentials or not credentials.credentials:
+        return None
+
+    payload = AuthService.decode_access_token(credentials.credentials)
+    if not payload:
+        return None
+
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        return None
+
+    try:
+        user_id = uuid.UUID(user_id_str)
+    except (ValueError, TypeError):
+        return None
+
+    user = UserRepository.get_by_id(db, user_id)
+    if not user or not user.is_active:
+        return None
+
+    return user
+
+
+def require_role(*allowed_roles: str) -> Callable[[User], User]:
+    """
+    Dependency factory ensuring the current user possesses one of the specified roles.
+    """
+    def role_checker(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in allowed_roles:
+            raise ForbiddenError(
+                f"Role '{current_user.role}' is not authorized. Required: {', '.join(allowed_roles)}."
+            )
+        return current_user
+
+    return role_checker
+
+
+def get_current_company_id(
+    current_user: User = Depends(get_current_user),
+) -> uuid.UUID:
+    """Convenience dependency returning the active company UUID for the current request."""
+    return current_user.company_id

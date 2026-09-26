@@ -159,11 +159,16 @@ class JobRepository:
     def list_jobs(
         db: Session,
         call_id: uuid.UUID | None = None,
+        company_id: uuid.UUID | None = None,
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[list[ProcessingJob], int, int]:
-        """List jobs with pagination."""
+        """List jobs with pagination, scoped to company_id if provided."""
+        from backend.app.models.call import Call
+
         base_query = select(ProcessingJob)
+        if company_id is not None:
+            base_query = base_query.join(Call, ProcessingJob.call_id == Call.id).where(Call.company_id == company_id)
         if call_id:
             base_query = base_query.where(ProcessingJob.call_id == call_id)
 

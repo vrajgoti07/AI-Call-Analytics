@@ -2,7 +2,7 @@
 AI Call Analytics — Analysis API Router.
 
 Endpoints for triggering pipeline execution, tracking stage progress, and retrieving
-consolidated call analytics summaries.
+consolidated call analytics summaries, scoped strictly to the user's company workspace.
 """
 
 from __future__ import annotations
@@ -12,10 +12,12 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from backend.app.core.auth import get_current_user
 from backend.app.core.exceptions import AppException, CallNotFoundError
 from backend.app.database.session import get_db
 from backend.app.models.call import CallStatus
 from backend.app.models.escalation import EscalationRisk
+from backend.app.models.user import User
 from backend.app.repositories.call_repository import CallRepository
 from backend.app.repositories.job_repository import JobRepository
 from backend.app.repositories.transcript_repository import TranscriptRepository
@@ -38,6 +40,7 @@ router = APIRouter(prefix="/calls", tags=["analysis"])
 def start_analysis(
     call_id: uuid.UUID,
     payload: StartAnalysisRequest | None = None,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AnalysisStatusResponse:
     """
@@ -45,7 +48,7 @@ def start_analysis(
     Audio Preprocessing -> ASR -> Diarization -> NLP -> Embeddings -> Themes -> Risk.
     Returns HTTP 202 Accepted with the tracking Job ID.
     """
-    call = CallRepository.get_by_id(db, call_id)
+    call = CallRepository.get_by_id(db, call_id, company_id=current_user.company_id)
     if not call:
         raise CallNotFoundError(call_id)
 
@@ -74,10 +77,11 @@ def start_analysis(
 )
 def get_analysis_status(
     call_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AnalysisStatusResponse:
     """Check the real-time stage progress (0–100%) and error state of a call."""
-    call = CallRepository.get_by_id(db, call_id)
+    call = CallRepository.get_by_id(db, call_id, company_id=current_user.company_id)
     if not call:
         raise CallNotFoundError(call_id)
 
@@ -110,10 +114,11 @@ def get_analysis_status(
 )
 def get_analysis_summary(
     call_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AnalysisSummaryResponse:
     """Consolidated summary combining transcript, NLP metrics, themes, and risk."""
-    call = CallRepository.get_by_id(db, call_id)
+    call = CallRepository.get_by_id(db, call_id, company_id=current_user.company_id)
     if not call:
         raise CallNotFoundError(call_id)
 
