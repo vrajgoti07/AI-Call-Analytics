@@ -12,6 +12,7 @@ import { Badge } from '../components/ui/Badge'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorAlert } from '../components/ui/ErrorAlert'
 import { useSemanticSearch } from '../hooks/useSearch'
+import { useThemes } from '../hooks/useThemes'
 import { formatDuration, formatSimilarity } from '../lib/utils'
 
 export function SearchPage() {
@@ -23,6 +24,7 @@ export function SearchPage() {
   const [topK, setTopK] = useState(10)
   const [hasSearched, setHasSearched] = useState(false)
 
+  const { data: themesData } = useThemes()
   const searchMutation = useSemanticSearch()
 
   const handleSearch = (e?: React.FormEvent) => {
@@ -39,13 +41,7 @@ export function SearchPage() {
   }
 
   const results = searchMutation.data?.results ?? []
-
-  const exampleQueries = [
-    'customer complaining about card being declined',
-    'inquiry about account balance and recent transactions',
-    'overdraft fee charged unexpectedly',
-    'need help transferring funds to another account',
-  ]
+  const themeSuggestions = (themesData?.themes ?? []).slice(0, 5).map((t) => t.title)
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
@@ -137,32 +133,42 @@ export function SearchPage() {
         />
       )}
 
-      {/* Example Queries (if no search conducted yet) */}
-      {!hasSearched && (
+      {/* Discovered Theme Suggestions or Prompt (if no search conducted yet) */}
+      {!hasSearched && themeSuggestions.length > 0 && (
         <div className="p-6 rounded-xl border border-[#E5E5E2] bg-[#FAFAF9] space-y-3">
           <span className="text-xs font-semibold text-[#17181C]">
-            Suggested Example Queries:
+            Discovered Theme Topics:
           </span>
           <div className="flex flex-wrap gap-2">
-            {exampleQueries.map((ex, i) => (
+            {themeSuggestions.map((topic, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => {
-                  setQuery(ex)
+                  setQuery(topic)
                   setHasSearched(true)
                   searchMutation.mutate({
-                    query: ex,
+                    query: topic,
                     similarity_threshold: threshold,
                     top_k: topK,
                   })
                 }}
                 className="px-3 py-1.5 rounded-lg border border-[#E5E5E2] bg-white hover:border-[#6D5AE6] text-xs text-[#60636B] hover:text-[#5844D6] shadow-xs transition-colors text-left cursor-pointer"
               >
-                "{ex}"
+                "{topic}"
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {!hasSearched && themeSuggestions.length === 0 && (
+        <div className="p-6 rounded-xl border border-[#E5E5E2] bg-[#FAFAF9] text-center space-y-2">
+          <Sparkles className="h-6 w-6 text-[#6D5AE6] mx-auto opacity-70" />
+          <h4 className="text-sm font-semibold text-[#17181C]">Semantic Search Ready</h4>
+          <p className="text-xs text-[#60636B] max-w-md mx-auto">
+            Type any phrase, customer question, or issue above to search across call transcripts.
+          </p>
         </div>
       )}
 

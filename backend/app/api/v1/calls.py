@@ -14,11 +14,11 @@ from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 
-from backend.app.core.auth import get_current_user
+from backend.app.core.auth import get_current_user, require_company
 from backend.app.core.exceptions import AppException, CallNotFoundError
 from backend.app.database.session import get_db
 from backend.app.models.call import CallStatus
-from backend.app.models.user import User
+from backend.app.models.user import User, UserRole
 from backend.app.repositories.call_repository import CallRepository
 from backend.app.repositories.job_repository import JobRepository
 from backend.app.schemas.call import (
@@ -43,7 +43,7 @@ router = APIRouter(prefix="/calls", tags=["calls"])
 )
 def create_call(
     payload: CallCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_company),
     db: Session = Depends(get_db),
 ) -> CallResponse:
     """Create a new Call entity before uploading audio, associated with current user's company."""
@@ -64,7 +64,7 @@ def create_call(
 def upload_audio(
     call_id: uuid.UUID,
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_company),
     db: Session = Depends(get_db),
 ) -> CallResponse:
     """
@@ -87,7 +87,7 @@ def upload_audio(
 def upload_zip(
     file: UploadFile = File(...),
     auto_analyze: bool = Query(default=True, description="Automatically queue AI analysis pipeline for ingested calls"),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_company),
     db: Session = Depends(get_db),
 ) -> BulkIngestResponse:
     """
@@ -119,9 +119,10 @@ def list_calls(
     db: Session = Depends(get_db),
 ) -> CallListResponse:
     """List calls scoped strictly to the authenticated user's workspace."""
+    effective_company_id = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
     calls, total, total_pages = CallRepository.list_calls(
         db=db,
-        company_id=current_user.company_id,
+        company_id=effective_company_id,
         batch_id=batch_id,
         status=status_filter,
         language=language,
@@ -152,7 +153,8 @@ def get_call(
     db: Session = Depends(get_db),
 ) -> CallDetailResponse:
     """Retrieve detailed metadata for a specific call belonging to the user's workspace."""
-    call = CallRepository.get_by_id(db, call_id, company_id=current_user.company_id)
+    company_scope = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
+    call = CallRepository.get_by_id(db, call_id, company_id=company_scope)
     if not call:
         raise CallNotFoundError(call_id)
 
@@ -183,7 +185,8 @@ def get_call_audio(
     db: Session = Depends(get_db),
 ) -> FileResponse:
     """Stream stored audio file for browser playback, enforcing tenant boundary."""
-    call = CallRepository.get_by_id(db, call_id, company_id=current_user.company_id)
+    company_scope = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
+    call = CallRepository.get_by_id(db, call_id, company_id=company_scope)
     if not call:
         raise CallNotFoundError(call_id)
     if not call.audio_file or not call.audio_file.storage_key:
@@ -224,7 +227,8 @@ def delete_call(
     db: Session = Depends(get_db),
 ) -> None:
     """Permanently delete a call from the user's workspace."""
-    call = CallRepository.get_by_id(db, call_id, company_id=current_user.company_id)
+    company_scope = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
+    call = CallRepository.get_by_id(db, call_id, company_id=company_scope)
     if not call:
         raise CallNotFoundError(call_id)
 

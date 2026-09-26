@@ -19,7 +19,7 @@ from backend.app.core.exceptions import AppException
 from backend.app.database.session import get_db
 from backend.app.models.call import CallStatus
 from backend.app.models.report import ReportType
-from backend.app.models.user import User
+from backend.app.models.user import User, UserRole
 from backend.app.repositories.batch_repository import BatchRepository
 from backend.app.repositories.call_repository import CallRepository
 from backend.app.repositories.report_repository import ReportRepository
@@ -49,9 +49,10 @@ def list_batches(
     db: Session = Depends(get_db),
 ) -> BatchListResponse:
     """List all ingestion batches scoped strictly to the authenticated user's workspace."""
+    effective_company_id = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
     batches, total, total_pages = BatchRepository.list_batches(
         db=db,
-        company_id=current_user.company_id,
+        company_id=effective_company_id,
         status=status_filter,
         search=search,
         page=page,
@@ -79,14 +80,15 @@ def get_batch(
     db: Session = Depends(get_db),
 ) -> BatchDetailResponse:
     """Get single batch metadata and processing progress."""
-    batch = BatchRepository.get_by_id(db, batch_id, company_id=current_user.company_id)
+    company_scope = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
+    batch = BatchRepository.get_by_id(db, batch_id, company_id=company_scope)
     if not batch:
         raise AppException("BATCH_NOT_FOUND", f"Batch {batch_id} not found.", 404)
 
     # Compute additional stats
     calls, total_calls, _ = CallRepository.list_calls(
         db=db,
-        company_id=current_user.company_id,
+        company_id=batch.company_id,
         batch_id=batch_id,
         page=1,
         page_size=1000,
@@ -113,13 +115,14 @@ def list_batch_calls(
     db: Session = Depends(get_db),
 ) -> CallListResponse:
     """Retrieve calls extracted from this specific batch archive."""
-    batch = BatchRepository.get_by_id(db, batch_id, company_id=current_user.company_id)
+    company_scope = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
+    batch = BatchRepository.get_by_id(db, batch_id, company_id=company_scope)
     if not batch:
         raise AppException("BATCH_NOT_FOUND", f"Batch {batch_id} not found.", 404)
 
     calls, total, total_pages = CallRepository.list_calls(
         db=db,
-        company_id=current_user.company_id,
+        company_id=batch.company_id,
         batch_id=batch_id,
         status=status_filter,
         page=page,
@@ -146,13 +149,14 @@ def analyze_batch(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Queue AI pipeline tasks for all unanalyzed or failed calls in this batch."""
-    batch = BatchRepository.get_by_id(db, batch_id, company_id=current_user.company_id)
+    company_scope = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
+    batch = BatchRepository.get_by_id(db, batch_id, company_id=company_scope)
     if not batch:
         raise AppException("BATCH_NOT_FOUND", f"Batch {batch_id} not found.", 404)
 
     calls, _, _ = CallRepository.list_calls(
         db=db,
-        company_id=current_user.company_id,
+        company_id=batch.company_id,
         batch_id=batch_id,
         page=1,
         page_size=1000,
@@ -189,7 +193,8 @@ def generate_batch_report(
     db: Session = Depends(get_db),
 ) -> ReportResponse:
     """Generate a batch-scoped PDF/JSON/CSV report."""
-    batch = BatchRepository.get_by_id(db, batch_id, company_id=current_user.company_id)
+    company_scope = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
+    batch = BatchRepository.get_by_id(db, batch_id, company_id=company_scope)
     if not batch:
         raise AppException("BATCH_NOT_FOUND", f"Batch {batch_id} not found.", 404)
 
@@ -207,7 +212,7 @@ def generate_batch_report(
 
     report = ReportService.generate_report(
         db=db,
-        company_id=current_user.company_id,
+        company_id=batch.company_id,
         user_id=current_user.id,
         req=req,
     )
@@ -227,13 +232,14 @@ def list_batch_reports(
     db: Session = Depends(get_db),
 ) -> ReportListResponse:
     """List reports specifically generated for this batch."""
-    batch = BatchRepository.get_by_id(db, batch_id, company_id=current_user.company_id)
+    company_scope = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
+    batch = BatchRepository.get_by_id(db, batch_id, company_id=company_scope)
     if not batch:
         raise AppException("BATCH_NOT_FOUND", f"Batch {batch_id} not found.", 404)
 
     reports, total, total_pages = ReportRepository.list_reports(
         db=db,
-        company_id=current_user.company_id,
+        company_id=batch.company_id,
         batch_id=batch_id,
         page=page,
         page_size=page_size,

@@ -4,6 +4,7 @@ AI Call Analytics — API v1 Router Aggregator.
 
 from fastapi import APIRouter
 
+from backend.app.api.v1.admin_companies import router as admin_companies_router
 from backend.app.api.v1.analysis import router as analysis_router
 from backend.app.api.v1.auth import router as auth_router
 from backend.app.api.v1.batches import router as batches_router
@@ -19,6 +20,7 @@ from backend.app.api.v1.transcript import router as transcript_router
 api_v1_router = APIRouter(prefix="/api/v1")
 
 api_v1_router.include_router(auth_router)
+api_v1_router.include_router(admin_companies_router)
 api_v1_router.include_router(batches_router)
 api_v1_router.include_router(calls_router)
 api_v1_router.include_router(transcript_router)

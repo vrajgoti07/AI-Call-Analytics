@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react'
 import { Link, Navigate, Route, Routes } from 'react-router-dom'
 import { ApplicationShell } from '../components/layout/ApplicationShell'
 import { ProtectedRoute } from '../components/auth/ProtectedRoute'
+import { RoleRoute } from '../components/auth/RoleRoute'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Button } from '../components/ui/Button'
 
@@ -11,6 +12,9 @@ const LoginPage = lazy(() =>
 )
 const RegisterPage = lazy(() =>
   import('../pages/RegisterPage').then((m) => ({ default: m.RegisterPage })),
+)
+const ForgotPasswordPage = lazy(() =>
+  import('../pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })),
 )
 
 // App Pages (Lazy-loaded for code-splitting)
@@ -53,6 +57,9 @@ const JobsPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import('../pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 )
+const AdminCompaniesPage = lazy(() =>
+  import('../pages/AdminCompaniesPage').then((m) => ({ default: m.AdminCompaniesPage })),
+)
 
 function PageLoadingFallback() {
   return (
@@ -89,11 +96,21 @@ export function AppRouter() {
           </Suspense>
         }
       />
+      <Route
+        path="/forgot-password"
+        element={
+          <Suspense fallback={<PageLoadingFallback />}>
+            <ForgotPasswordPage />
+          </Suspense>
+        }
+      />
 
       {/* Protected Application Routes */}
       <Route element={<ProtectedRoute />}>
         <Route element={<ApplicationShell />}>
           <Route path="/" element={<Navigate to="/overview" replace />} />
+
+          {/* Accessible to COMPANY and ADMIN */}
           <Route
             path="/overview"
             element={
@@ -142,6 +159,7 @@ export function AppRouter() {
               </Suspense>
             }
           />
+          <Route path="/semantic-search" element={<Navigate to="/search" replace />} />
           <Route
             path="/themes"
             element={
@@ -166,6 +184,7 @@ export function AppRouter() {
               </Suspense>
             }
           />
+          <Route path="/escalation-risk" element={<Navigate to="/risk" replace />} />
           <Route
             path="/reports"
             element={
@@ -175,29 +194,61 @@ export function AppRouter() {
             }
           />
           <Route
-            path="/evaluation"
+            path="/reports/:reportId"
             element={
               <Suspense fallback={<PageLoadingFallback />}>
-                <EvaluationPage />
+                <ReportsPage />
               </Suspense>
             }
           />
           <Route
-            path="/jobs"
-            element={
-              <Suspense fallback={<PageLoadingFallback />}>
-                <JobsPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/settings"
+            path="/profile"
             element={
               <Suspense fallback={<PageLoadingFallback />}>
                 <SettingsPage />
               </Suspense>
             }
           />
+
+          {/* ADMIN ONLY Routes */}
+          <Route element={<RoleRoute allowedRoles={['ADMIN']} />}>
+            <Route
+              path="/admin/companies"
+              element={
+                <Suspense fallback={<PageLoadingFallback />}>
+                  <AdminCompaniesPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/jobs"
+              element={
+                <Suspense fallback={<PageLoadingFallback />}>
+                  <JobsPage />
+                </Suspense>
+              }
+            />
+            <Route path="/admin/processing-jobs" element={<Navigate to="/jobs" replace />} />
+            <Route
+              path="/evaluation"
+              element={
+                <Suspense fallback={<PageLoadingFallback />}>
+                  <EvaluationPage />
+                </Suspense>
+              }
+            />
+            <Route path="/admin/ai-evaluation" element={<Navigate to="/evaluation" replace />} />
+            <Route
+              path="/settings"
+              element={
+                <Suspense fallback={<PageLoadingFallback />}>
+                  <SettingsPage />
+                </Suspense>
+              }
+            />
+            <Route path="/admin/system-settings" element={<Navigate to="/settings" replace />} />
+          </Route>
+
           <Route
             path="*"
             element={

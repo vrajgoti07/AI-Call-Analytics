@@ -66,7 +66,7 @@ class UserResponse(BaseModel):
     full_name: str
     role: str
     is_active: bool
-    company_id: uuid.UUID
+    company_id: uuid.UUID | None = None
     company: CompanyResponse | None = None
     created_at: datetime
     updated_at: datetime
@@ -86,7 +86,7 @@ class TokenPayload(BaseModel):
 
     sub: str  # user_id
     email: str
-    company_id: str
+    company_id: str | None = None
     role: str
     exp: int
 
@@ -95,3 +95,17 @@ class SwitchCompanyRequest(BaseModel):
     """Request to switch active company context."""
 
     company_id: uuid.UUID
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Payload to initiate password reset."""
+
+    email: EmailStr = Field(..., description="Account email address")
+
+
+class ResetPasswordRequest(BaseModel):
+    """Payload to complete password reset."""
+
+    email: EmailStr = Field(..., description="Account email address")
+    new_password: str = Field(..., min_length=8, max_length=128, description="New password (min 8 characters)")
+

@@ -132,14 +132,31 @@ class TestProductionE2ESuite:
         assert res_me.json()["company_id"] == TestProductionE2ESuite.company_a_id
 
     # =========================================================================
-    # TEST 3: Create Company (Admin)
+    # TEST 3: Create Company (Admin Only - Company Blocked)
     # =========================================================================
     def test_03_create_company(self, client: TestClient) -> None:
+        # Company user is forbidden from creating companies
         headers = {"Authorization": f"Bearer {TestProductionE2ESuite.company_a_token}"}
         new_company_name = f"Subsidiary Corp {uuid.uuid4().hex[:6]}"
-        res = client.post(
+        res_forbidden = client.post(
             "/api/v1/auth/companies",
             headers=headers,
+            json={"name": new_company_name},
+        )
+        assert res_forbidden.status_code == 403
+
+        # Admin user can create new companies
+        admin_login = client.post(
+            "/api/v1/auth/login",
+            json={"email": "vrajgoti07@gmail.com", "password": "123456789"},
+        )
+        assert admin_login.status_code == 200
+        admin_token = admin_login.json()["access_token"]
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+        res = client.post(
+            "/api/v1/auth/companies",
+            headers=admin_headers,
             json={"name": new_company_name},
         )
         assert res.status_code == 201, res.text
@@ -148,23 +165,31 @@ class TestProductionE2ESuite:
         assert comp["id"] is not None
 
     # =========================================================================
-    # TEST 4: Select Company Context
+    # TEST 4: Select Company Context (Admin Only - Company Blocked)
     # =========================================================================
     def test_04_select_company(self, client: TestClient) -> None:
+        # Company user is forbidden from switching companies
         headers = {"Authorization": f"Bearer {TestProductionE2ESuite.company_a_token}"}
-        res_list = client.get("/api/v1/auth/companies", headers=headers)
-        assert res_list.status_code == 200
-        companies = res_list.json()
-        assert len(companies) >= 1
-
-        res_switch = client.post(
+        res_forbidden = client.post(
             "/api/v1/auth/switch-company",
             headers=headers,
             json={"company_id": TestProductionE2ESuite.company_a_id},
         )
+        assert res_forbidden.status_code == 403
+
+        # Admin user can switch workspace context
+        admin_login = client.post(
+            "/api/v1/auth/login",
+            json={"email": "vrajgoti07@gmail.com", "password": "123456789"},
+        )
+        admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+        res_switch = client.post(
+            "/api/v1/auth/switch-company",
+            headers=admin_headers,
+            json={"company_id": TestProductionE2ESuite.company_a_id},
+        )
         assert res_switch.status_code == 200
         assert res_switch.json()["user"]["company_id"] == TestProductionE2ESuite.company_a_id
-        TestProductionE2ESuite.company_a_token = res_switch.json()["access_token"]
 
     # =========================================================================
     # TEST 5: Upload One Audio File + Hash

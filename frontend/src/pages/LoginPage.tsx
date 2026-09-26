@@ -4,7 +4,7 @@ AI Call Analytics — Login Page.
 
 import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Activity, AlertCircle, ArrowRight, CheckCircle2, Lock, Mail } from 'lucide-react'
+import { Activity, AlertCircle, ArrowRight, Lock, Mail } from 'lucide-react'
 import { authApi } from '../api/auth'
 import { useAuthStore } from '../stores/authStore'
 import { Button } from '../components/ui/Button'
@@ -38,12 +38,6 @@ export function LoginPage() {
     }
   }
 
-  const fillDemoAdmin = () => {
-    setEmail('admin@acmecorp.com')
-    setPassword('Password123!')
-    setErrorMessage(null)
-  }
-
   return (
     <div className="min-h-screen w-full flex flex-col justify-center items-center bg-[#FAFAF8] p-4 sm:p-6">
       {/* Brand Header */}
@@ -68,7 +62,11 @@ export function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+          {/* Hidden inputs to prevent aggressive browser autofill */}
+          <input type="text" className="hidden" aria-hidden="true" tabIndex={-1} />
+          <input type="password" className="hidden" aria-hidden="true" tabIndex={-1} />
+
           <div>
             <label
               htmlFor="email"
@@ -80,9 +78,12 @@ export function LoginPage() {
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8D95]" />
               <input
                 id="email"
+                name="login_email"
                 type="email"
                 required
-                autoComplete="email"
+                autoComplete="off"
+                data-lpignore="true"
+                data-form-type="other"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@company.com"
@@ -99,14 +100,23 @@ export function LoginPage() {
               >
                 Password
               </label>
+              <Link
+                to="/forgot-password"
+                className="text-xs font-medium text-[#6D5AE6] hover:text-[#5844D6] hover:underline"
+              >
+                Forgot password?
+              </Link>
             </div>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8D95]" />
               <input
                 id="password"
+                name="login_password"
                 type="password"
                 required
-                autoComplete="current-password"
+                autoComplete="new-password"
+                data-lpignore="true"
+                data-form-type="other"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
@@ -133,29 +143,6 @@ export function LoginPage() {
             )}
           </Button>
         </form>
-
-        {/* Demo Quick Login Helper */}
-        <div className="pt-2 border-t border-[#E5E5E2]">
-          <div className="p-3 bg-[#F7F7F5] border border-[#E5E5E2] rounded-xl space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#17181C] flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-[#6D5AE6]" />
-                Demo Credentials
-              </span>
-              <button
-                type="button"
-                onClick={fillDemoAdmin}
-                className="text-[11px] font-semibold text-[#6D5AE6] hover:underline cursor-pointer"
-              >
-                Auto-fill
-              </button>
-            </div>
-            <div className="text-[11px] text-[#60636B] font-mono leading-tight space-y-0.5">
-              <div>admin@acmecorp.com</div>
-              <div>Password123!</div>
-            </div>
-          </div>
-        </div>
 
         {/* Registration Link */}
         <div className="text-center pt-1 text-xs text-[#60636B]">

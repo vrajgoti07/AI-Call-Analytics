@@ -13,7 +13,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from backend.app.core.auth import get_current_user
+from backend.app.core.auth import require_admin
 from backend.app.models.user import User
 
 router = APIRouter(prefix="/evaluation", tags=["evaluation"])
@@ -24,20 +24,22 @@ _EVAL_FILE = _PROJECT_ROOT / "reports" / "evaluation" / "evaluation_results.json
 
 @router.get(
     "",
-    summary="Retrieve latest AI quality benchmarks and component evaluation results",
+    summary="Retrieve latest AI quality benchmarks and component evaluation results (Admin only)",
 )
 def get_evaluation_results(
-    current_user: User = Depends(get_current_user),
+    admin_user: User = Depends(require_admin),
 ) -> dict[str, Any]:
     """
     Returns benchmark scores (WER, DER, F1, MRR, AUC) and component breakdowns
     generated during Phase 9 evaluation against MInDS-14 ground truth.
     """
     if not _EVAL_FILE.exists():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No evaluation run results found on server.",
-        )
+        return {
+            "evaluation_id": None,
+            "timestamp": None,
+            "git_commit": None,
+            "components": None,
+        }
 
     try:
         with open(_EVAL_FILE, "r", encoding="utf-8") as f:

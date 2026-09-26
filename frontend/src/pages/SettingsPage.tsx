@@ -147,7 +147,7 @@ export function SettingsPage() {
               <tr className="hover:bg-[#FAFAF9] transition-colors">
                 <td className="py-3 px-3 font-semibold text-[#17181C] font-sans">Intent Classifier</td>
                 <td className="py-3 px-3 text-[#6D5AE6]">TF-IDF + LogisticRegression / SetFit</td>
-                <td className="py-3 px-3 text-[#60636B]">14 classes (MInDS-14)</td>
+                <td className="py-3 px-3 text-[#60636B]">Configured intent classes</td>
                 <td className="py-3 px-3 text-[#60636B] font-sans">Customer intent detection</td>
                 <td className="py-3 px-3 text-right text-emerald-700 font-bold">READY</td>
               </tr>

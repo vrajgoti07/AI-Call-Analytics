@@ -1,6 +1,8 @@
+import React from 'react'
 import {
   Activity,
   AlertTriangle,
+  Building2,
   ChevronLeft,
   ChevronRight,
   Cpu,
@@ -14,6 +16,7 @@ import {
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useUiStore } from '../../stores/uiStore'
+import { useAuthStore } from '../../stores/authStore'
 import { cn } from '../../lib/utils'
 
 interface NavItem {
@@ -23,14 +26,18 @@ interface NavItem {
   badge?: string
 }
 
-const navSections: Array<{ title: string; items: NavItem[] }> = [
+interface NavSection {
+  title: string
+  items: NavItem[]
+}
+
+const companySections: NavSection[] = [
   {
     title: 'Main',
     items: [
       { name: 'Overview', to: '/overview', icon: LayoutDashboard },
       { name: 'ZIP Batches', to: '/batches', icon: FolderArchive },
       { name: 'Calls', to: '/calls', icon: PhoneCall },
-      { name: 'Semantic Search', to: '/search', icon: Search },
     ],
   },
   {
@@ -39,20 +46,58 @@ const navSections: Array<{ title: string; items: NavItem[] }> = [
       { name: 'Reports', to: '/reports', icon: FileText },
       { name: 'Themes', to: '/themes', icon: Sparkles },
       { name: 'Escalation Risk', to: '/risk', icon: AlertTriangle },
-      { name: 'AI Evaluation', to: '/evaluation', icon: Activity },
+    ],
+  },
+  {
+    title: 'Tools',
+    items: [
+      { name: 'Semantic Search', to: '/search', icon: Search },
+    ],
+  },
+  {
+    title: 'Account',
+    items: [
+      { name: 'Profile / Settings', to: '/profile', icon: Settings },
+    ],
+  },
+]
+
+const adminSections: NavSection[] = [
+  {
+    title: 'Main',
+    items: [
+      { name: 'Overview', to: '/overview', icon: LayoutDashboard },
+    ],
+  },
+  {
+    title: 'Administration',
+    items: [
+      { name: 'Companies', to: '/admin/companies', icon: Building2 },
+      { name: 'System Settings', to: '/settings', icon: Settings },
     ],
   },
   {
     title: 'Operations',
     items: [
       { name: 'Processing Jobs', to: '/jobs', icon: Cpu },
-      { name: 'System Settings', to: '/settings', icon: Settings },
+      { name: 'AI Evaluation', to: '/evaluation', icon: Activity },
+    ],
+  },
+  {
+    title: 'Platform Analytics',
+    items: [
+      { name: 'ZIP Batches', to: '/batches', icon: FolderArchive },
+      { name: 'Calls', to: '/calls', icon: PhoneCall },
+      { name: 'Reports', to: '/reports', icon: FileText },
     ],
   },
 ]
 
 export function Sidebar({ className }: { className?: string }) {
   const { sidebarCollapsed, toggleSidebar, mobileDrawerOpen, setMobileDrawerOpen } = useUiStore()
+  const { user } = useAuthStore()
+
+  const navSections = user?.role === 'ADMIN' ? adminSections : companySections
 
   const sidebarContent = (
     <div className="flex h-full flex-col justify-between p-4 bg-white border-r border-[#E5E5E2]">
@@ -67,7 +112,9 @@ export function Sidebar({ className }: { className?: string }) {
               <h1 className="text-sm font-semibold tracking-tight text-[#17181C]">
                 AI Call Analytics
               </h1>
-              <p className="text-[11px] text-[#60636B] font-medium">Enterprise Intelligence</p>
+              <p className="text-[11px] text-[#60636B] font-medium">
+                {user?.role === 'ADMIN' ? 'Platform Administration' : 'Enterprise Intelligence'}
+              </p>
             </div>
           )}
         </div>

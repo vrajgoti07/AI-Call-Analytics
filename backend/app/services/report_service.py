@@ -1205,12 +1205,12 @@ class ReportService:
         cls,
         db: Session,
         report_id: uuid.UUID,
-        company_id: uuid.UUID,
+        company_id: uuid.UUID | None = None,
         file_format: str = "pdf",
     ) -> tuple[Path, str, str]:
         """
         Validate report ownership and return (file_path, content_type, safe_filename).
-        Strictly enforces tenant isolation: report MUST belong to company_id.
+        Strictly enforces tenant isolation: report MUST belong to company_id if provided.
         """
         report = ReportRepository.get_by_id(db, report_id, company_id=company_id)
         if not report:
@@ -1229,7 +1229,7 @@ class ReportService:
         if fmt == "pdf":
             if not report.file_path_pdf or not os.path.exists(report.file_path_pdf):
                 if report.pdf_data:
-                    base_dir = Path("data") / "reports" / f"company_{company_id}"
+                    base_dir = Path("data") / "reports" / f"company_{report.company_id}"
                     base_dir.mkdir(parents=True, exist_ok=True)
                     restored_path = base_dir / f"restored_{str(report.id)[:8]}_{safe_base}.pdf"
                     restored_path.write_bytes(report.pdf_data)

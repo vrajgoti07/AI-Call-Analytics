@@ -1,3 +1,0 @@
-Turn,Speaker,Start (s),End (s),Text,Sentiment,Intent
-1,SPEAKER_00,0.00,3.50,Thank you for calling Acme.,POSITIVE,app_error
-2,SPEAKER_01,4.00,8.20,I am very satisfied with your service.,POSITIVE,app_error

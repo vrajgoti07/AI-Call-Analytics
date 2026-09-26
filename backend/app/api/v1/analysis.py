@@ -17,7 +17,7 @@ from backend.app.core.exceptions import AppException, CallNotFoundError
 from backend.app.database.session import get_db
 from backend.app.models.call import CallStatus
 from backend.app.models.escalation import EscalationRisk
-from backend.app.models.user import User
+from backend.app.models.user import User, UserRole
 from backend.app.repositories.call_repository import CallRepository
 from backend.app.repositories.job_repository import JobRepository
 from backend.app.repositories.transcript_repository import TranscriptRepository
@@ -48,7 +48,8 @@ def start_analysis(
     Audio Preprocessing -> ASR -> Diarization -> NLP -> Embeddings -> Themes -> Risk.
     Returns HTTP 202 Accepted with the tracking Job ID.
     """
-    call = CallRepository.get_by_id(db, call_id, company_id=current_user.company_id)
+    company_scope = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
+    call = CallRepository.get_by_id(db, call_id, company_id=company_scope)
     if not call:
         raise CallNotFoundError(call_id)
 
@@ -81,7 +82,8 @@ def get_analysis_status(
     db: Session = Depends(get_db),
 ) -> AnalysisStatusResponse:
     """Check the real-time stage progress (0–100%) and error state of a call."""
-    call = CallRepository.get_by_id(db, call_id, company_id=current_user.company_id)
+    company_scope = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
+    call = CallRepository.get_by_id(db, call_id, company_id=company_scope)
     if not call:
         raise CallNotFoundError(call_id)
 
@@ -118,7 +120,8 @@ def get_analysis_summary(
     db: Session = Depends(get_db),
 ) -> AnalysisSummaryResponse:
     """Consolidated summary combining transcript, NLP metrics, themes, and risk."""
-    call = CallRepository.get_by_id(db, call_id, company_id=current_user.company_id)
+    company_scope = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
+    call = CallRepository.get_by_id(db, call_id, company_id=company_scope)
     if not call:
         raise CallNotFoundError(call_id)
 

@@ -45,7 +45,7 @@ export function ThemesPage() {
         <MetricCard
           title="Discovered Themes"
           value={totalThemes}
-          subtext="Discrete topic clusters discovered in Phase 7"
+          subtext="Discrete caller topic clusters"
           icon={<Layers className="h-4 w-4 text-[#6D5AE6]" />}
           loading={isLoading}
         />
@@ -118,7 +118,7 @@ export function ThemesPage() {
         <EmptyState
           icon={<Sparkles className="h-10 w-10 text-[#60636B]" />}
           title="No theme discovery runs found"
-          description="Execute Phase 7 UMAP/HDBSCAN clustering script in the AI service to persist customer topic clusters."
+          description="Discovered caller topic patterns and clusters will appear here once call audio is analyzed."
         />
       )}
     </div>

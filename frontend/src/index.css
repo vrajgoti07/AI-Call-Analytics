@@ -64,4 +64,14 @@
   ::-webkit-scrollbar-thumb:hover {
     background: var(--color-border-highlight);
   }
+
+  /* Prevent browser autofill background color overrides */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover, 
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #FAFAF8 inset !important;
+    -webkit-text-fill-color: #17181C !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
 }

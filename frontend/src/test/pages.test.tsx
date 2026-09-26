@@ -125,12 +125,12 @@ describe('Pages Integration & State Handling', () => {
     expect(await screen.findByText('No theme discovery runs found')).toBeInTheDocument()
   })
 
-  it('renders SearchPage with search input and example queries', async () => {
+  it('renders SearchPage with search input and initial state', async () => {
     renderPage(<SearchPage />)
 
     expect(screen.getByText('Semantic Vector Search')).toBeInTheDocument()
     expect(screen.getByPlaceholderText(/Type a natural language query/i)).toBeInTheDocument()
-    expect(screen.getByText('Suggested Example Queries:')).toBeInTheDocument()
+    expect(screen.getByText('Semantic Search Ready')).toBeInTheDocument()
   })
 
   it('renders EvaluationPage with real benchmark metrics', async () => {

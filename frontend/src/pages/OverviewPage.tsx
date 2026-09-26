@@ -1,3 +1,4 @@
+
 import {
   ArrowRight,
   CheckCircle2,
@@ -100,7 +101,7 @@ export function OverviewPage() {
         <MetricCard
           title="Total Ingested Calls"
           value={totalCalls}
-          subtext="Processed via MInDS-14 or uploaded"
+          subtext="Total processed and queued audio calls"
           icon={<PhoneCall className="h-4 w-4 text-[#6D5AE6]" />}
           loading={callsLoading}
         />
@@ -114,14 +115,14 @@ export function OverviewPage() {
         <MetricCard
           title="Active Processing"
           value={processingCalls}
-          subtext="In Celery pipeline stages"
+          subtext="Currently running in pipeline"
           icon={<Clock className="h-4 w-4 text-amber-600" />}
           loading={callsLoading}
         />
         <MetricCard
           title="Average Call Duration"
           value={formatDuration(avgDuration)}
-          subtext="Computed from acoustic audio headers"
+          subtext="Calculated from audio duration"
           icon={<Clock className="h-4 w-4 text-[#60636B]" />}
           loading={callsLoading}
         />
@@ -182,7 +183,7 @@ export function OverviewPage() {
                   </span>
                 </div>
                 <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  100% Pipeline Health
+                  {completedCalls === totalCalls && totalCalls > 0 ? '100% Pipeline Health' : `${statusDistribution[0].name}`}
                 </span>
               </div>
               <div className="w-full h-3 bg-[#F2F2F0] rounded-full overflow-hidden">
@@ -272,7 +273,7 @@ export function OverviewPage() {
           ) : (
             <EmptyState
               title="No theme clusters discovered"
-              description="Execute Phase 7 UMAP/HDBSCAN clustering to reveal caller topic patterns."
+              description="Topic clusters will appear here once audio analysis discovers conversation themes."
               className="py-6"
             />
           )}

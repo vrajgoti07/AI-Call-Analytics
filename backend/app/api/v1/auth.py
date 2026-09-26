@@ -21,8 +21,10 @@ from backend.app.repositories.company_repository import CompanyRepository
 from backend.app.schemas.auth import (
     CompanyCreate,
     CompanyResponse,
+    ForgotPasswordRequest,
     LoginRequest,
     RegisterRequest,
+    ResetPasswordRequest,
     SwitchCompanyRequest,
     TokenResponse,
     UserResponse,
@@ -36,15 +38,15 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
     "/register",
     response_model=TokenResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Register a new user and workspace",
+    summary="Register a new company customer account",
 )
 def register(
     payload: RegisterRequest,
     db: Session = Depends(get_db),
 ) -> TokenResponse:
     """
-    Register a new company workspace and initial administrator account.
-    Returns the generated JWT access token along with the user and company profile.
+    Register a new company workspace and customer account.
+    Always creates a user with role=COMPANY and associates it with the new company.
     """
     try:
         user, token = AuthService.register(db=db, req=payload)
@@ -72,10 +74,14 @@ def login(
     db: Session = Depends(get_db),
 ) -> TokenResponse:
     """
-    Authenticate against existing user credentials.
+    Authenticate against existing user credentials (supports both ADMIN and COMPANY).
     Returns a signed JWT bearer token on success.
     """
-    user = AuthService.authenticate(db=db, email=payload.email, password=payload.password)
+    try:
+        user = AuthService.authenticate(db=db, email=payload.email, password=payload.password)
+    except ValueError as err:
+        raise ForbiddenError(str(err))
+
     if not user:
         raise AuthenticationError("Invalid email or password.")
 
@@ -85,6 +91,39 @@ def login(
         token_type="bearer",
         user=UserResponse.model_validate(user),
     )
+
+
+@router.post(
+    "/forgot-password",
+    summary="Request a password reset link/token",
+)
+def forgot_password(
+    payload: ForgotPasswordRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    """Request password reset. Returns standard confirmation message."""
+    return AuthService.forgot_password(db=db, email=payload.email)
+
+
+@router.post(
+    "/reset-password",
+    summary="Reset account password",
+)
+def reset_password(
+    payload: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    """Reset password for a registered account."""
+    try:
+        AuthService.reset_password(db=db, email=payload.email, new_password=payload.new_password)
+        return {"message": "Password reset successfully. You can now log in.", "status": "ok"}
+    except ValueError as err:
+        raise AppException(
+            code="RESET_FAILED",
+            message=str(err),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
 
 
 @router.get(
@@ -109,7 +148,7 @@ def list_companies(
     db: Session = Depends(get_db),
 ) -> list[CompanyResponse]:
     """
-    Retrieve workspaces. Admins can see all workspaces, analysts see their active company.
+    Retrieve workspaces. Admins can see all workspaces, companies see their active company.
     """
     if current_user.role == UserRole.ADMIN.value:
         companies = CompanyRepository.list_all(db)
@@ -137,9 +176,8 @@ def switch_company(
     if not company or not company.is_active:
         raise CompanyNotFoundError(payload.company_id)
 
-    # Only admin can switch across companies freely; analysts can only switch to their assigned company
-    if current_user.role != UserRole.ADMIN.value and current_user.company_id != payload.company_id:
-        raise ForbiddenError("Only workspace administrators can switch company contexts.")
+    if current_user.role != UserRole.ADMIN.value:
+        raise ForbiddenError("Company accounts cannot switch workspaces.")
 
     current_user.company_id = payload.company_id
     db.commit()

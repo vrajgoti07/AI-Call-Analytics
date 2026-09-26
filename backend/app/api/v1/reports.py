@@ -89,7 +89,8 @@ def get_report(
     db: Session = Depends(get_db),
 ) -> ReportResponse:
     """Retrieve details and status for a specific report in user's company."""
-    report = ReportRepository.get_by_id(db, report_id, company_id=current_user.company_id)
+    company_scope = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
+    report = ReportRepository.get_by_id(db, report_id, company_id=company_scope)
     if not report:
         raise AppException(
             code="REPORT_NOT_FOUND",
@@ -116,10 +117,11 @@ def download_report(
     3. Verifies file existence on disk
     4. Sets safe Content-Disposition and Content-Type headers
     """
+    company_scope = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
     file_path, content_type, filename = ReportService.get_report_download_artifact(
         db=db,
         report_id=report_id,
-        company_id=current_user.company_id,
+        company_id=company_scope,
         file_format=format,
     )
 
@@ -149,9 +151,10 @@ def list_reports(
     db: Session = Depends(get_db),
 ) -> ReportListResponse:
     """List reports strictly scoped to the active workspace."""
+    effective_company_id = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
     reports, total, total_pages = ReportRepository.list_reports(
         db=db,
-        company_id=current_user.company_id,
+        company_id=effective_company_id,
         call_id=call_id,
         batch_id=batch_id,
         report_type=report_type,
@@ -215,9 +218,8 @@ def get_call_report(
     db: Session = Depends(get_db),
 ) -> ReportResponse:
     """Get the latest completed report for a call in the user's workspace."""
-    call = db.scalar(
-        select(Call).where(Call.id == call_id, Call.company_id == current_user.company_id)
-    )
+    company_scope = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
+    call = CallRepository.get_by_id(db, call_id, company_id=company_scope)
     if not call:
         raise AppException(
             code="CALL_NOT_FOUND",
@@ -228,7 +230,7 @@ def get_call_report(
     report = ReportRepository.get_latest_for_call(
         db=db,
         call_id=call_id,
-        company_id=current_user.company_id,
+        company_id=call.company_id,
     )
     if not report:
         raise AppException(

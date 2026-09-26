@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AppRouter } from '../router'
+import { useAuthStore } from '../stores/authStore'
+import { authApi, type UserResponse } from '../api/auth'
 
 function renderWithProviders(initialRoute: string) {
   const queryClient = new QueryClient({
@@ -22,7 +24,30 @@ function renderWithProviders(initialRoute: string) {
   )
 }
 
+const mockUser: UserResponse = {
+  id: 'user-1',
+  email: 'test@example.com',
+  full_name: 'Test Admin',
+  role: 'ADMIN',
+  is_active: true,
+  company_id: 'comp-1',
+  company: {
+    id: 'comp-1',
+    name: 'Acme Test Corp',
+    slug: 'acme-test',
+    is_active: true,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+}
+
 describe('Application Routing', () => {
+  beforeEach(() => {
+    vi.spyOn(authApi, 'getMe').mockResolvedValue(mockUser)
+    useAuthStore.getState().setAuth('mock-token', mockUser)
+  })
   it('renders Overview page on /overview', async () => {
     renderWithProviders('/overview')
     expect(await screen.findByText('Executive Operations Overview')).toBeInTheDocument()

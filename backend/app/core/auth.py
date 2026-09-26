@@ -57,6 +57,10 @@ def get_current_user(
     if not user.is_active:
         raise AuthenticationError("User account is inactive.")
 
+    # If user belongs to a company, ensure the company is active
+    if user.company_id is not None and user.company is not None and not user.company.is_active:
+        raise ForbiddenError("Company workspace is deactivated. Please contact platform administrator.")
+
     return user
 
 
@@ -89,7 +93,37 @@ def get_optional_current_user(
     if not user or not user.is_active:
         return None
 
+    if user.company_id is not None and user.company is not None and not user.company.is_active:
+        return None
+
     return user
+
+
+require_authenticated_user = get_current_user
+
+
+def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Dependency enforcing that current user has ADMIN role."""
+    from backend.app.models.user import UserRole
+    if current_user.role != UserRole.ADMIN.value:
+        raise ForbiddenError("Administrative privileges required.")
+    return current_user
+
+
+def require_company(current_user: User = Depends(get_current_user)) -> User:
+    """Dependency enforcing that current user has COMPANY role."""
+    from backend.app.models.user import UserRole
+    if current_user.role != UserRole.COMPANY.value or not current_user.company_id:
+        raise ForbiddenError("Company customer account required.")
+    return current_user
+
+
+def require_company_or_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Dependency allowing access to either COMPANY or ADMIN role."""
+    from backend.app.models.user import UserRole
+    if current_user.role not in (UserRole.ADMIN.value, UserRole.COMPANY.value):
+        raise ForbiddenError("Authorized role required.")
+    return current_user
 
 
 def require_role(*allowed_roles: str) -> Callable[[User], User]:
@@ -108,6 +142,7 @@ def require_role(*allowed_roles: str) -> Callable[[User], User]:
 
 def get_current_company_id(
     current_user: User = Depends(get_current_user),
-) -> uuid.UUID:
+) -> uuid.UUID | None:
     """Convenience dependency returning the active company UUID for the current request."""
     return current_user.company_id
+

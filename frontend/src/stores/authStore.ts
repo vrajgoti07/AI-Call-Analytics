@@ -4,6 +4,7 @@ AI Call Analytics — Authentication & Tenant Session Store.
 
 import { create } from 'zustand'
 import { authApi, type UserResponse } from '../api/auth'
+import { queryClient } from '../lib/queryClient'
 
 interface AuthState {
   token: string | null
@@ -47,6 +48,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: () => {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(USER_KEY)
+    try {
+      queryClient.clear()
+    } catch {
+      // ignore
+    }
     set({
       token: null,
       user: null,

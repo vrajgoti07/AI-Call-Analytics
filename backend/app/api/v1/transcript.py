@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from backend.app.core.auth import get_current_user
 from backend.app.core.exceptions import AppException, CallNotFoundError
 from backend.app.database.session import get_db
-from backend.app.models.user import User
+from backend.app.models.user import User, UserRole
 from backend.app.repositories.call_repository import CallRepository
 from backend.app.repositories.transcript_repository import TranscriptRepository
 from backend.app.schemas.common import PaginationMeta
@@ -38,7 +38,8 @@ def get_transcript(
     db: Session = Depends(get_db),
 ) -> TranscriptResponse:
     """Retrieve full transcript overview and model provenance for a call."""
-    call = CallRepository.get_by_id(db, call_id, company_id=current_user.company_id)
+    company_scope = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
+    call = CallRepository.get_by_id(db, call_id, company_id=company_scope)
     if not call:
         raise CallNotFoundError(call_id)
 
@@ -76,7 +77,8 @@ def get_transcript_turns(
     db: Session = Depends(get_db),
 ) -> TranscriptTurnListResponse:
     """Retrieve paginated speaker turns including sentiment, intent, and entities."""
-    call = CallRepository.get_by_id(db, call_id, company_id=current_user.company_id)
+    company_scope = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
+    call = CallRepository.get_by_id(db, call_id, company_id=company_scope)
     if not call:
         raise CallNotFoundError(call_id)
 

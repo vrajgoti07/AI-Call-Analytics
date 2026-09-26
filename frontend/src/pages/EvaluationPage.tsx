@@ -31,12 +31,12 @@ export function EvaluationPage() {
     )
   }
 
-  if (!data || !data.components) {
+  if (!data || !data.components || Object.keys(data.components).length === 0) {
     return (
       <EmptyState
         icon={<Activity className="h-10 w-10 text-[#60636B]" />}
         title="No evaluation run available"
-        description="Run Phase 9 evaluation benchmarks on the backend to validate model quality against MInDS-14 ground truth."
+        description="No model benchmark runs have been generated yet. When evaluation runs are executed, quality metrics will be displayed here."
       />
     )
   }
@@ -48,6 +48,8 @@ export function EvaluationPage() {
   const dataset = comps.dataset
 
   const intentPerClass = (intent?.details?.per_class as Record<string, { precision: number; recall: number; f1: number; support: number }>) || {}
+  const totalIntentSupport = Object.values(intentPerClass).reduce((acc, c) => acc + (c.support || 0), 0)
+  const intentClassCount = Object.keys(intentPerClass).length
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
@@ -59,13 +61,13 @@ export function EvaluationPage() {
             AI Model Evaluation & Quality Benchmarks
           </h2>
           <p className="mt-1 text-xs sm:text-sm text-[#60636B]">
-            Validated accuracy, error rates, and confusion diagnostics across all pipeline stages (Phase 9)
+            Validated accuracy, error rates, and confusion diagnostics across all speech and NLP pipeline stages
           </p>
         </div>
 
         <div className="text-right text-xs font-mono text-[#60636B]">
-          <div>Run ID: {data.evaluation_id.slice(0, 8)}...</div>
-          <div>Audited: {formatDateTime(data.timestamp)}</div>
+          <div>Run ID: {data.evaluation_id ? data.evaluation_id.slice(0, 8) + '...' : '--'}</div>
+          <div>Audited: {data.timestamp ? formatDateTime(data.timestamp) : '--'}</div>
         </div>
       </div>
 
@@ -98,7 +100,7 @@ export function EvaluationPage() {
               Coverage: {formatPercentage(diarization.metrics.average_alignment_coverage as number)}
             </div>
             <div className="text-[11px] text-[#60636B] font-mono">
-              0 Violations • {diarization.model_name}
+              {diarization.model_name}
             </div>
           </div>
         )}
@@ -136,14 +138,14 @@ export function EvaluationPage() {
         )}
       </div>
 
-      {/* Per-Class Intent Breakdown Table (from MInDS-14 evaluation) */}
+      {/* Per-Class Intent Breakdown Table */}
       {Object.keys(intentPerClass).length > 0 && (
         <div className="p-5 rounded-xl border border-[#E5E5E2] bg-white space-y-4 shadow-xs">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-[#17181C]">
-              MInDS-14 Intent Classification Performance (85 Test Samples)
+              {dataset?.dataset_name ? `${dataset.dataset_name} ` : ''}Intent Classification Performance ({totalIntentSupport > 0 ? totalIntentSupport : dataset?.sample_count ?? 0} Test Samples)
             </h3>
-            <span className="text-xs text-[#6D5AE6] font-mono tabular-nums font-semibold">14 Distinct Classes</span>
+            <span className="text-xs text-[#6D5AE6] font-mono tabular-nums font-semibold">{intentClassCount} Distinct Classes</span>
           </div>
 
           <div className="overflow-x-auto">

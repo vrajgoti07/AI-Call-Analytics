@@ -72,7 +72,7 @@ class AuthService:
         claims = {
             "sub": str(user.id),
             "email": user.email,
-            "company_id": str(user.company_id),
+            "company_id": str(user.company_id) if user.company_id else None,
             "role": user.role,
         }
         return cls.create_access_token(claims)
@@ -80,45 +80,45 @@ class AuthService:
     @classmethod
     def register(cls, db: Session, req: RegisterRequest) -> tuple[User, str]:
         """
-        Register a new workspace and tenant admin user.
-        If the company already exists, joins it as analyst; if newly created, sets as admin.
+        Register a new workspace and customer account.
+        Always sets role=COMPANY and associates the user with the newly created company.
+        Ensures atomic transaction: if user creation fails, company creation is rolled back.
         """
         existing_user = UserRepository.get_by_email(db, req.email)
         if existing_user is not None:
             raise ValueError(f"User with email '{req.email}' already exists.")
 
-        company = CompanyRepository.get_by_name(db, req.company_name)
-        role = UserRole.ANALYST.value
+        try:
+            # Check or create company
+            company = CompanyRepository.get_by_name(db, req.company_name)
+            if company is None:
+                company = CompanyRepository.create(db, req.company_name)
+            elif not company.is_active:
+                raise ValueError(f"Company '{req.company_name}' is currently inactive.")
 
-        if company is None:
-            company = CompanyRepository.create(db, req.company_name)
-            role = UserRole.ADMIN.value
-        else:
-            # If company already exists, check if any users exist in this company
-            users_in_company = UserRepository.list_by_company(db, company.id)
-            if not users_in_company:
-                role = UserRole.ADMIN.value
+            hashed_pw = cls.hash_password(req.password)
+            user = UserRepository.create(
+                db=db,
+                email=req.email,
+                hashed_password=hashed_pw,
+                full_name=req.full_name,
+                company_id=company.id,
+                role=UserRole.COMPANY.value,
+            )
 
-        hashed_pw = cls.hash_password(req.password)
-        user = UserRepository.create(
-            db=db,
-            email=req.email,
-            hashed_password=hashed_pw,
-            full_name=req.full_name,
-            company_id=company.id,
-            role=role,
-        )
+            db.commit()
+            db.refresh(user)
+            db.refresh(company)
 
-        db.commit()
-        db.refresh(user)
-        db.refresh(company)
-
-        token = cls.generate_token_for_user(user)
-        return user, token
+            token = cls.generate_token_for_user(user)
+            return user, token
+        except Exception:
+            db.rollback()
+            raise
 
     @classmethod
     def authenticate(cls, db: Session, email: str, password: str) -> User | None:
-        """Authenticate user by email and password."""
+        """Authenticate user by email and password, checking user and company active status."""
         user = UserRepository.get_by_email(db, email)
         if user is None:
             return None
@@ -126,4 +126,43 @@ class AuthService:
             return None
         if not cls.verify_password(password, user.hashed_password):
             return None
+        # Check company active status if user belongs to a company
+        if user.company_id is not None and user.company is not None and not user.company.is_active:
+            raise ValueError("Company workspace is disabled. Please contact platform administrator.")
+        return user
+
+    @classmethod
+    def forgot_password(cls, db: Session, email: str) -> dict[str, str]:
+        """Initiate password reset flow for registered user."""
+        user = UserRepository.get_by_email(db, email)
+        if not user or not user.is_active:
+            # Return same friendly message to prevent email enumeration
+            return {
+                "message": "If your email is registered, you will receive password reset instructions.",
+                "status": "ok",
+            }
+
+        # Generate a password reset token (valid for 15 minutes)
+        reset_token = cls.create_access_token(
+            {"sub": str(user.id), "email": user.email, "type": "password_reset"},
+            expires_delta=timedelta(minutes=15),
+        )
+        return {
+            "message": "If your email is registered, you will receive password reset instructions.",
+            "status": "ok",
+            "reset_token": reset_token,
+        }
+
+    @classmethod
+    def reset_password(cls, db: Session, email: str, new_password: str) -> User:
+        """Reset user password."""
+        user = UserRepository.get_by_email(db, email)
+        if not user:
+            raise ValueError(f"No account found with email '{email}'.")
+        if not user.is_active:
+            raise ValueError("User account is disabled.")
+
+        user.hashed_password = cls.hash_password(new_password)
+        db.commit()
+        db.refresh(user)
         return user

@@ -40,8 +40,8 @@ class UserRepository:
         email: str,
         hashed_password: str,
         full_name: str,
-        company_id: uuid.UUID,
-        role: str = UserRole.ANALYST.value,
+        company_id: uuid.UUID | None = None,
+        role: str = UserRole.COMPANY.value,
     ) -> User:
         """Create and persist a new user record."""
         user = User(

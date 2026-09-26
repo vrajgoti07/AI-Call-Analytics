@@ -45,7 +45,7 @@ export function RiskPage() {
           Escalation Risk Intelligence
         </h2>
         <p className="mt-1 text-xs sm:text-sm text-[#60636B]">
-          Predictive early detection of caller dissatisfaction and supervisor escalation triggers (Phase 8 Multi-Modal Engine)
+          Predictive early detection of caller dissatisfaction and supervisor escalation triggers
         </p>
       </div>
 
@@ -55,7 +55,7 @@ export function RiskPage() {
         <div className="space-y-1">
           <span className="font-semibold text-sky-950">Model Engine Provenance:</span>
           <p className="text-sky-900 leading-relaxed">
-            Escalation detection is evaluated through our Phase 8 multi-modal model (combining acoustic turn duration, temporal sentiment deterioration, and repeated issue intent signals).
+            Escalation detection is evaluated through our multi-modal engine combining acoustic turn duration, temporal sentiment deterioration, and repeated issue intent signals.
           </p>
         </div>
       </div>

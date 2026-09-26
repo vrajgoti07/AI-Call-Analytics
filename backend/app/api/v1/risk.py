@@ -16,7 +16,7 @@ from backend.app.core.auth import get_current_user
 from backend.app.core.exceptions import AppException, CallNotFoundError
 from backend.app.database.session import get_db
 from backend.app.models.escalation import EscalationRisk
-from backend.app.models.user import User
+from backend.app.models.user import User, UserRole
 from backend.app.repositories.call_repository import CallRepository
 from backend.app.schemas.risk import EscalationRiskResponse
 
@@ -34,7 +34,8 @@ def get_escalation_risk(
     db: Session = Depends(get_db),
 ) -> EscalationRiskResponse:
     """Retrieve persisted multi-modal risk score, probability, and explainability factors."""
-    call = CallRepository.get_by_id(db, call_id, company_id=current_user.company_id)
+    company_scope = current_user.company_id if current_user.role == UserRole.COMPANY.value else None
+    call = CallRepository.get_by_id(db, call_id, company_id=company_scope)
     if not call:
         raise CallNotFoundError(call_id)
 

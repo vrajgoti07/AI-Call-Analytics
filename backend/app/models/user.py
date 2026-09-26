@@ -25,11 +25,10 @@ def utc_now() -> datetime:
 
 
 class UserRole(str, enum.Enum):
-    """User access control roles."""
+    """User access control roles. Exactly two roles: ADMIN and COMPANY."""
 
-    ADMIN = "admin"
-    ANALYST = "analyst"
-    VIEWER = "viewer"
+    ADMIN = "ADMIN"
+    COMPANY = "COMPANY"
 
 
 class User(Base):
@@ -61,7 +60,7 @@ class User(Base):
     role: Mapped[str] = mapped_column(
         String(32),
         nullable=False,
-        default=UserRole.ANALYST.value,
+        default=UserRole.COMPANY.value,
         index=True,
     )
     is_active: Mapped[bool] = mapped_column(
@@ -69,10 +68,10 @@ class User(Base):
         nullable=False,
         default=True,
     )
-    company_id: Mapped[uuid.UUID] = mapped_column(
+    company_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("companies.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
     created_at: Mapped[datetime] = mapped_column(
@@ -88,7 +87,7 @@ class User(Base):
     )
 
     # Relationships
-    company: Mapped[Company] = relationship("Company", back_populates="users")
+    company: Mapped[Company | None] = relationship("Company", back_populates="users")
 
     __table_args__ = (
         Index("ix_users_company_role", "company_id", "role"),
