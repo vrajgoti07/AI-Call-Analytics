@@ -1,0 +1,74 @@
+{
+  "report_id": "d3e21970-752d-46fc-98f3-9db8ef48e7b3",
+  "company_id": "87a146bc-946e-4856-a1db-2cb482ec6c52",
+  "company_name": "Acme Corp e0986a",
+  "company_slug": "acme-corp-e0986a",
+  "date_from": null,
+  "date_to": null,
+  "total_calls": 6,
+  "status_distribution": {
+    "UPLOADED": 5,
+    "COMPLETED": 1
+  },
+  "completed_count": 1,
+  "processing_count": 0,
+  "failed_count": 0,
+  "average_duration_seconds": 15.0,
+  "risk_distribution": {
+    "LOW": 1,
+    "MEDIUM": 0,
+    "HIGH": 0,
+    "CRITICAL": 0
+  },
+  "average_risk_score": 0.15,
+  "calls_sample": [
+    {
+      "call_id": "bb879e79-bf5f-4b5f-bf29-9d90734dcd00",
+      "external_id": "CALL-A1-DUPLICATE",
+      "status": "UPLOADED",
+      "duration": null,
+      "language": "en",
+      "created_at": "2026-09-26T18:36:10.069638+05:30"
+    },
+    {
+      "call_id": "c1f018c6-b137-4c5f-96a4-fb4e93871b43",
+      "external_id": "valid-call-77",
+      "status": "UPLOADED",
+      "duration": null,
+      "language": "en",
+      "created_at": "2026-09-26T18:36:10.056505+05:30"
+    },
+    {
+      "call_id": "5ccf61ba-954d-45ef-aa16-5bb0829d2d6a",
+      "external_id": "support-call-03",
+      "status": "UPLOADED",
+      "duration": null,
+      "language": "en",
+      "created_at": "2026-09-26T18:36:10.037283+05:30"
+    },
+    {
+      "call_id": "f15e1fb7-f0df-4d62-8ab5-6fafc4e34a25",
+      "external_id": "support-call-02",
+      "status": "UPLOADED",
+      "duration": null,
+      "language": "en",
+      "created_at": "2026-09-26T18:36:10.033979+05:30"
+    },
+    {
+      "call_id": "f66b1c59-cd3c-4cca-916e-ca0ce2f40cd9",
+      "external_id": "support-call-01",
+      "status": "UPLOADED",
+      "duration": null,
+      "language": "en",
+      "created_at": "2026-09-26T18:36:10.029923+05:30"
+    },
+    {
+      "call_id": "f30a5946-ce00-4c1a-afb4-4c1f3f080007",
+      "external_id": "CALL-A1-SAMPLE",
+      "status": "COMPLETED",
+      "duration": 15.0,
+      "language": "en",
+      "created_at": "2026-09-26T18:36:09.938601+05:30"
+    }
+  ]
+}

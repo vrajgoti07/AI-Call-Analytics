@@ -43,9 +43,15 @@ export function useReport(reportId?: string) {
 }
 
 export function useCallReport(callId?: string) {
-  return useQuery<ReportResponse>({
+  return useQuery<ReportResponse | null>({
     queryKey: ['callReport', callId],
-    queryFn: () => getCallReport(callId!),
+    queryFn: async () => {
+      try {
+        return await getCallReport(callId!)
+      } catch (err) {
+        return null
+      }
+    },
     enabled: Boolean(callId),
     retry: false,
     refetchInterval: (query) => {
@@ -65,6 +71,7 @@ export function useGenerateReport() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: REPORTS_QUERY_KEY })
       if (data.call_id) {
+        queryClient.setQueryData(['callReport', data.call_id], data)
         queryClient.invalidateQueries({ queryKey: ['callReport', data.call_id] })
       }
       queryClient.setQueryData(['report', data.id], data)

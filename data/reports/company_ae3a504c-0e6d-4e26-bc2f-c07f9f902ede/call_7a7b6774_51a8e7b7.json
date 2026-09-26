@@ -1,0 +1,69 @@
+{
+  "report_id": "51a8e7b7-88ad-4cee-82cf-cb5cebd4f982",
+  "company_name": "Acme Corp",
+  "call_id": "7a7b6774-8bad-4cf9-a12f-5ee3f86b459d",
+  "external_id": "TEST-INTEGRATION-003",
+  "call_status": "COMPLETED",
+  "duration_seconds": 15.0,
+  "language": "en",
+  "turn_count": 3,
+  "speaker_count": 2,
+  "dominant_sentiment": "POSITIVE",
+  "sentiment_distribution": {
+    "POSITIVE": 2,
+    "NEGATIVE": 1
+  },
+  "primary_intent": "general_inquiry",
+  "intent_distribution": {
+    "general_inquiry": 3
+  },
+  "risk_score": 16.03,
+  "risk_level": "LOW",
+  "risk_probability": 0.1603,
+  "risk_explanation": "Escalation risk is LOW (score 16.0/100). Interaction exhibited stable conversational dynamics:\n- Problem-related banking topic: inquiry classified as 'card_issues' (associated with account friction or transaction blocks).",
+  "top_risk_factors": [
+    {
+      "value": 1.0,
+      "feature": "problem_intent",
+      "description": "Primary intent 'card_issues' indicates account friction or system error",
+      "contribution": 0.09,
+      "display_name": "Friction Banking Intent"
+    },
+    {
+      "value": 0.333,
+      "feature": "negative_sentiment",
+      "description": "33.3% of turns were negative (33.3% strongly negative)",
+      "contribution": 0.0666,
+      "display_name": "Negative Sentiment Volume"
+    },
+    {
+      "value": 0.0,
+      "feature": "acoustic_friction",
+      "description": "Speech overlap ratio of 0.0% with max turn duration of 5.5s",
+      "contribution": 0.0037,
+      "display_name": "Conversational Overlap & Turn Monologues"
+    },
+    {
+      "value": 0.0,
+      "feature": "escalation_keywords",
+      "description": "Detected 0 escalation phrases (e.g., manager, supervisor, dispute)",
+      "contribution": 0.0,
+      "display_name": "Explicit Escalation Keywords"
+    },
+    {
+      "value": 0.0296,
+      "feature": "sentiment_trajectory",
+      "description": "Sentiment slope of +0.03 indicates worsening customer tone across conversational phases",
+      "contribution": 0.0,
+      "display_name": "Deteriorating Sentiment Trajectory"
+    },
+    {
+      "value": 0.0,
+      "feature": "repetition_score",
+      "description": "Turn lexical overlap score of 0.00 suggests unresolved recurring requests",
+      "contribution": 0.0,
+      "display_name": "Conversational Repetition"
+    }
+  ],
+  "created_at": "2026-09-24T23:34:06.275261+05:30"
+}

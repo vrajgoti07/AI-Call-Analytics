@@ -12,11 +12,13 @@ import uuid
 from pathlib import Path
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import FileResponse
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from backend.app.core.auth import get_current_user
 from backend.app.core.exceptions import AppException, ForbiddenError
 from backend.app.database.session import get_db
+from backend.app.models.call import Call
 from backend.app.models.user import User, UserRole
 from backend.app.repositories.report_repository import ReportRepository
 from backend.app.schemas.common import PaginationMeta

@@ -63,5 +63,7 @@ export async function deleteCall(callId: string): Promise<void> {
 }
 
 export function getAudioStreamUrl(callId: string): string {
-  return `${API_BASE_URL}/api/v1/calls/${callId}/audio`
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('ai_call_token') : null
+  const query = token ? `?token=${encodeURIComponent(token)}` : ''
+  return `${API_BASE_URL}/api/v1/calls/${callId}/audio${query}`
 }

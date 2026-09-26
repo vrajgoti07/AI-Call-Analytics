@@ -152,6 +152,69 @@ class ReportService:
             transcript = TranscriptRepository.get_by_call_id(db, call.id)
             turns = transcript.turns if transcript else []
 
+            # Auto-enrich turns with NLP if sentiment data is missing
+            if turns and not any(t.sentiment for t in turns):
+                try:
+                    from ai_service.diarization.schema import SpeakerAttributedTranscript, SpeakerTurn
+
+                    speaker_turns = [
+                        SpeakerTurn(
+                            turn_id=t.sequence_number,
+                            speaker=t.speaker_id,
+                            start=t.start_time,
+                            end=t.end_time,
+                            text=t.text,
+                        )
+                        for t in turns
+                    ]
+                    diarized = SpeakerAttributedTranscript(
+                        full_text=transcript.text or "",
+                        turns=speaker_turns,
+                        speakers=sorted({t.speaker_id for t in turns}),
+                        total_turns=len(turns),
+                        audio_duration=transcript.duration or call.duration or 15.0,
+                    )
+
+                    from ai_service.pipeline.nlp_analyzer import NLPAnalyzer
+
+                    nlp_analyzer = NLPAnalyzer()
+                    nlp_result = nlp_analyzer.analyze(diarized)
+
+                    if nlp_result and nlp_result.sentiment:
+                        for turn in turns:
+                            matching = next(
+                                (s for s in nlp_result.sentiment.turns if s.turn_id == turn.sequence_number),
+                                None,
+                            )
+                            if matching:
+                                turn.sentiment = {"label": matching.label, "score": float(matching.score)}
+                            if nlp_result.intent:
+                                turn.intent = {
+                                    "intent": nlp_result.intent.predicted_intent,
+                                    "confidence": float(nlp_result.intent.confidence),
+                                }
+                        db.commit()
+                        logger.info("Auto-enriched %d turns with NLP data for report generation.", len(turns))
+
+                    # Run risk analysis if not already present
+                    try:
+                        from ai_service.risk.service import EscalationRiskService
+
+                        risk_svc = EscalationRiskService()
+                        risk_svc.analyze(
+                            call_id=str(call.id),
+                            transcript=diarized,
+                            sentiment=nlp_result.sentiment if nlp_result else None,
+                            intent=nlp_result.intent if nlp_result else None,
+                            entities=nlp_result.entities if nlp_result else None,
+                            db_session=db,
+                        )
+                    except Exception as risk_err:
+                        logger.warning("Inline risk analysis skipped: %s", risk_err)
+
+                except Exception as nlp_err:
+                    logger.warning("Inline NLP enrichment skipped: %s", nlp_err)
+
             # Escalation risk
             risk_record = db.scalar(
                 select(EscalationRisk)
@@ -159,6 +222,45 @@ class ReportService:
                 .order_by(desc(EscalationRisk.created_at))
                 .limit(1)
             )
+
+            if not risk_record and turns:
+                try:
+                    from ai_service.diarization.schema import SpeakerAttributedTranscript, SpeakerTurn
+                    from ai_service.risk.service import EscalationRiskService
+
+                    speaker_turns = [
+                        SpeakerTurn(
+                            turn_id=t.sequence_number,
+                            speaker=t.speaker_id,
+                            start=t.start_time,
+                            end=t.end_time,
+                            text=t.text,
+                        )
+                        for t in turns
+                    ]
+                    diarized = SpeakerAttributedTranscript(
+                        full_text=transcript.text or "",
+                        turns=speaker_turns,
+                        speakers=sorted({t.speaker_id for t in turns}),
+                        total_turns=len(turns),
+                        audio_duration=transcript.duration or call.duration or 15.0,
+                    )
+                    risk_svc = EscalationRiskService()
+                    risk_svc.analyze(
+                        call_id=str(call.id),
+                        transcript=diarized,
+                        db_session=db,
+                    )
+                    db.commit()
+                    risk_record = db.scalar(
+                        select(EscalationRisk)
+                        .where(EscalationRisk.call_id == str(call.id))
+                        .order_by(desc(EscalationRisk.created_at))
+                        .limit(1)
+                    )
+                    logger.info("Inline risk analysis evaluated for call %s", call.id)
+                except Exception as risk_err:
+                    logger.warning("Inline risk analysis fallback failed: %s", risk_err)
 
             # Metrics
             sentiment_counts: dict[str, int] = {}
@@ -231,7 +333,7 @@ class ReportService:
             pdf_bytes = pdf_path.read_bytes() if pdf_path.exists() else None
 
             # Mark completed and persist PDF binary in PostgreSQL
-            ReportRepository.update_report_completed(
+            updated_report = ReportRepository.update_report_completed(
                 db=db,
                 report_id=report.id,
                 file_path_pdf=str(pdf_path),
@@ -240,7 +342,8 @@ class ReportService:
                 summary_data=summary_data,
                 pdf_data=pdf_bytes,
             )
-            return report
+            # Return the refreshed report so the API response has status=COMPLETED
+            return updated_report or report
 
         except Exception as exc:
             logger.exception("Failed to generate individual call report %s: %s", report.id, exc)
@@ -374,7 +477,7 @@ class ReportService:
             pdf_bytes = pdf_path.read_bytes() if pdf_path.exists() else None
 
             # Mark completed and persist PDF binary in PostgreSQL
-            ReportRepository.update_report_completed(
+            updated_report = ReportRepository.update_report_completed(
                 db=db,
                 report_id=report.id,
                 file_path_pdf=str(pdf_path),
@@ -383,7 +486,8 @@ class ReportService:
                 summary_data=summary_data,
                 pdf_data=pdf_bytes,
             )
-            return report
+            # Return the refreshed report so the API response has status=COMPLETED
+            return updated_report or report
 
         except Exception as exc:
             logger.exception("Failed to generate company analytics report %s: %s", report.id, exc)

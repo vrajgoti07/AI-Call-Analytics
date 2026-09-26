@@ -1,0 +1,4 @@
+Turn,Speaker,Start (s),End (s),Text,Sentiment,Intent
+1,SPEAKER_00,0.00,3.00,"Hello, thank you for calling customer support. How can I assist you today?",POSITIVE,general_inquiry
+2,SPEAKER_01,3.50,9.00,"Hi, I have an issue with my debit card. It was declined at a grocery store.",NEGATIVE,general_inquiry
+3,SPEAKER_00,9.50,14.00,I can certainly look into that for you. Let me check your account status.,POSITIVE,general_inquiry

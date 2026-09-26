@@ -10,7 +10,7 @@ from __future__ import annotations
 import uuid
 from typing import Callable
 
-from fastapi import Depends
+from fastapi import Depends, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -25,16 +25,19 @@ security = HTTPBearer(auto_error=False)
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    token: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> User:
     """
-    Extract, validate JWT bearer token, and return the active User record.
+    Extract, validate JWT bearer token (from Authorization header or ?token query param),
+    and return the active User record.
     Raises AuthenticationError if token is absent, invalid, or expired.
     """
-    if not credentials or not credentials.credentials:
+    raw_token = credentials.credentials if credentials else token
+    if not raw_token:
         raise AuthenticationError("Authentication token is required.")
 
-    payload = AuthService.decode_access_token(credentials.credentials)
+    payload = AuthService.decode_access_token(raw_token)
     if not payload:
         raise AuthenticationError("Invalid or expired authentication token.")
 
@@ -59,15 +62,17 @@ def get_current_user(
 
 def get_optional_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    token: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> User | None:
     """
     Optionally extract authenticated user. Returns None if unauthenticated.
     """
-    if not credentials or not credentials.credentials:
+    raw_token = credentials.credentials if credentials else token
+    if not raw_token:
         return None
 
-    payload = AuthService.decode_access_token(credentials.credentials)
+    payload = AuthService.decode_access_token(raw_token)
     if not payload:
         return None
 

@@ -242,7 +242,7 @@ def analyze_call_task(
                         }
                     if nlp_result.intent:
                         turn.intent = {
-                            "intent": getattr(nlp_result.intent, "intent", "general_inquiry"),
+                            "intent": getattr(nlp_result.intent, "predicted_intent", getattr(nlp_result.intent, "intent", "general_inquiry")),
                             "confidence": float(getattr(nlp_result.intent, "confidence", 0.9)),
                         }
             if nlp_result and nlp_result.entities and hasattr(nlp_result.entities, "entities"):
@@ -257,7 +257,7 @@ def analyze_call_task(
             db.commit()
             logger.info("Enriched %d turns with NLP analytics.", len(saved_transcript.turns))
         except Exception as e:
-            logger.warning("NLP analysis note: %s", e)
+            logger.exception("NLP analysis error: %s", e)
 
         JobRepository.update_stage(db, job_id, "nlp", "COMPLETED", 75)
 
